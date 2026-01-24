@@ -32,8 +32,11 @@ public class Product {
     @Column (nullable = false, unique = true)
     private Long serialNumber;
 
+    @ManyToOne (fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @JoinColumn (name = "categoryId")
+    private Category category;
 
 
-//    private Long categoryId;
+    //    private Long categoryId;
 //    private Long brandId;
 }
