@@ -36,6 +36,10 @@ public class Product {
     @JoinColumn (name = "categoryId")
     private Category category;
 
+    @ManyToOne (fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @JoinColumn (name = "brandId")
+    private Brand brand;
+
 
     //    private Long categoryId;
 //    private Long brandId;
