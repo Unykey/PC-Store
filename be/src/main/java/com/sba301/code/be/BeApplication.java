@@ -10,5 +10,4 @@ public class BeApplication {
 		SpringApplication.run(BeApplication.class, args);
 		System.out.println("PC Store");
 	}
-
 }

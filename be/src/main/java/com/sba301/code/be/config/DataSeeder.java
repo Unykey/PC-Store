@@ -5,6 +5,7 @@ import com.sba301.code.be.model.enums.OrderStatus;
 import com.sba301.code.be.repository.*;
 import net.datafaker.Faker;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +24,19 @@ public class DataSeeder implements CommandLineRunner {
 
     private final Faker faker = new Faker();
     private final Random random = new Random();
+    private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(AccountRepository accountRepository,
                       RoleRepository roleRepository,
                       CategoryRepository categoryRepository,
                       ProductRepository productRepository,
-                      OrderRepository orderRepository) {
+                      OrderRepository orderRepository, PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.roleRepository = roleRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -88,7 +91,7 @@ public class DataSeeder implements CommandLineRunner {
         Account admin = new Account();
         admin.setAccountName("admin");
         admin.setEmail("admin@pcstore.com");
-        admin.setPassword("admin123"); // Lưu ý: Thực tế cần mã hóa BCrypt
+        admin.setPassword(passwordEncoder.encode("admin123")); // Lưu ý: Thực tế cần mã hóa BCrypt
         admin.setRole(adminRole);
         accounts.add(admin);
 
@@ -102,7 +105,7 @@ public class DataSeeder implements CommandLineRunner {
             }
             acc.setAccountName(rawName);
             acc.setEmail(faker.internet().emailAddress());
-            acc.setPassword("123456"); // Password mặc định
+            acc.setPassword(passwordEncoder.encode("123456")); // Password mặc định
             acc.setRole(customerRole);
             accounts.add(acc);
         }
