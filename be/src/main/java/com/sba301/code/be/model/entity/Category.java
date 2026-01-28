@@ -1,16 +1,14 @@
 package com.sba301.code.be.model.entity;
 
+import com.sba301.code.be.model.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 @Entity
-@Table(name = "category")
-@Getter
-@Setter
-@NoArgsConstructor
+@Table(name = "category_tbl")
+@Data
 public class Category {
 
     @Id
@@ -24,5 +22,17 @@ public class Category {
     private String description;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-    private Set<Product> products = new HashSet<>();
+    private List<Product> products;
+
+    Product addProduct(Product product) {
+        this.products.add(product);
+        product.setCategory(this);
+        return product;
+    }
+
+    Product removeProduct(Product product) {
+        this.products.remove(product);
+        product.setCategory(null);
+        return product;
+    }
 }
