@@ -12,7 +12,7 @@ public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int categoryId;
+    private Integer categoryId;
 
     @Column(nullable = false, unique = true, length = 100)
     private String name;
@@ -20,6 +20,6 @@ public class Category {
     @Column(nullable = false, length = 500)
     private String description;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Product> products;
 }

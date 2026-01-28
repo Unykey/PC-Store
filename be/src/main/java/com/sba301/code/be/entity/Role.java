@@ -11,11 +11,11 @@ import java.util.List;
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int roleId;
+    private Integer roleId;
 
     @Column(nullable = false, unique = true, length = 20)
     private String roleName;
 
-    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "role", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Account> accounts;
 }

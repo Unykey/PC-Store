@@ -12,7 +12,7 @@ public class Account {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int accountId;
+    private Integer accountId;
 
     @Column(nullable = false, length = 20)
     private String accountName;
@@ -27,6 +27,6 @@ public class Account {
     @JoinColumn(name = "role_id")
     private Role role;
 
-    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Order> orders;
 }

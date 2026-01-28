@@ -11,15 +11,15 @@ public class OrderDetail {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int orderDetailId;
+    private Integer orderDetailId;
 
     @Column(nullable = false)
     @Min(1)
-    private int quantity;
+    private Integer quantity;
 
     @Column(nullable = false)
     @Min(1)
-    private float priceAtPurchase;
+    private Float priceAtPurchase;
 
     @ManyToOne
     @JoinColumn(name = "order_id")

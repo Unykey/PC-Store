@@ -12,7 +12,7 @@ public class Installment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int paymentId;
+    private Integer paymentId;
 
     @Column(nullable = false)
     private String method;
@@ -21,7 +21,7 @@ public class Installment {
     private String status;
 
     @Column(nullable = false)
-    private float amountPaid;
+    private Float amountPaid;
 
     @Column(nullable = false)
     private LocalDateTime transactionDate;

@@ -13,7 +13,7 @@ public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int productId;
+    private Integer productId;
 
     @Column(nullable = false, unique = true, length = 100)
     private String name;
@@ -23,11 +23,11 @@ public class Product {
 
     @Column(nullable = false)
     @Min(1)
-    private float price;
+    private Float price;
 
     @Column(nullable = false)
     @Min(0)
-    private int stockQuantity;
+    private Integer stockQuantity;
 
     @Column(nullable = false, unique = true)
     private String serialNumber;
@@ -36,6 +36,6 @@ public class Product {
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderDetail> orderDetails;
 }
