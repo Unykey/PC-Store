@@ -1,21 +1,24 @@
-package com.sba301.code.be.entity;
+package com.sba301.code.be.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
-@Table(name = "role_tbl")
-@Data
+@Table(name = "role")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int roleId;
+    private Long roleId;
 
     @Column(nullable = false, unique = true, length = 20)
     private String roleName;
 
     @OneToMany(mappedBy = "role", cascade = CascadeType.ALL)
-    private List<Account> accounts;
+    private Set<Account> accounts = new HashSet<>();
 }

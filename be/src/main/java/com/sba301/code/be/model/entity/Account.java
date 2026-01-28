@@ -1,0 +1,35 @@
+package com.sba301.code.be.model.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "account")
+@Getter
+@Setter
+@NoArgsConstructor
+public class Account {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long accountId;
+
+    @Column(nullable = false, length = 50)
+    private String accountName;
+
+    @Column(unique = true, nullable = false, length = 100)
+    private String email;
+
+    @Column(nullable = false, length = 255)
+    private String password;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "role_id")
+    private Role role;
+
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL)
+    private Set<Order> orders = new HashSet<>();
+}

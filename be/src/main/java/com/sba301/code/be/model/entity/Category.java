@@ -1,18 +1,21 @@
-package com.sba301.code.be.entity;
+package com.sba301.code.be.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
-@Table(name = "category_tbl")
-@Data
+@Table(name = "category")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int categoryId;
+    private Long categoryId;
 
     @Column(nullable = false, unique = true, length = 100)
     private String name;
@@ -21,5 +24,5 @@ public class Category {
     private String description;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-    private List<Product> products;
+    private Set<Product> products = new HashSet<>();
 }

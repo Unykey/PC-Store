@@ -1,6 +1,6 @@
 package com.sba301.code.be.controller;
 
-import com.sba301.code.be.entity.Account;
+import com.sba301.code.be.model.entity.Account;
 import com.sba301.code.be.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

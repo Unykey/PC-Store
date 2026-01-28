@@ -1,19 +1,23 @@
-package com.sba301.code.be.entity;
+package com.sba301.code.be.model.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
-import lombok.Data;
+import lombok.*;
 
-import java.util.List;
+import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
-@Table(name = "product_tbl")
-@Data
+@Table(name = "product")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Product {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private int productId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long productId;
 
     @Column(nullable = false, unique = true, length = 100)
     private String name;
@@ -22,14 +26,14 @@ public class Product {
     private String description;
 
     @Column(nullable = false)
-    @Min(1)
-    private float price;
+    @Min(0)
+    private BigDecimal price;
 
     @Column(nullable = false)
     @Min(0)
     private int stockQuantity;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String serialNumber;
 
     @ManyToOne
@@ -37,5 +41,5 @@ public class Product {
     private Category category;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    private List<OrderDetail> orderDetails;
+    private Set<OrderDetail> orderDetails = new HashSet<>();
 }

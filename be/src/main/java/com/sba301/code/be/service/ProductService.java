@@ -1,6 +1,6 @@
 package com.sba301.code.be.service;
 
-import com.sba301.code.be.entity.Product;
+import com.sba301.code.be.model.entity.Product;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

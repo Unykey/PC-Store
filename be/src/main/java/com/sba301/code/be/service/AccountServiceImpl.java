@@ -1,6 +1,6 @@
 package com.sba301.code.be.service;
 
-import com.sba301.code.be.entity.Account;
+import com.sba301.code.be.model.entity.Account;
 import com.sba301.code.be.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public Account getAccountById(int accountId) {
+    public Account getAccountById(Long accountId) {
         return accountRepository.findById(accountId).get();
     }
 
@@ -29,12 +29,12 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public Account updateAccount(int accountId, Account account) {
+    public Account updateAccount(Long accountId, Account account) {
         return accountRepository.save(account);
     }
 
     @Override
-    public void deleteAccount(int accountId) {
+    public void deleteAccount(Long accountId) {
         accountRepository.deleteById(accountId);
     }
 }

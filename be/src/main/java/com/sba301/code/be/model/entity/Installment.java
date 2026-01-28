@@ -1,18 +1,23 @@
-package com.sba301.code.be.entity;
+package com.sba301.code.be.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "installment_tbl")
-@Data
+@Table(name = "installment")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Installment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private int paymentId;
+    private Long paymentId;
 
     @Column(nullable = false)
     private String method;
@@ -21,10 +26,10 @@ public class Installment {
     private String status;
 
     @Column(nullable = false)
-    private float amountPaid;
+    private BigDecimal amountPaid;
 
     @Column(nullable = false)
-    private LocalDateTime transactionDate;
+    private LocalDateTime transactionDate = LocalDateTime.now();
 
     @ManyToOne
     @JoinColumn(name = "order_id")
