@@ -8,7 +8,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "category_tbl")
-@Data
+@Getter
+@Setter
 public class Category {
 
     @Id
