@@ -31,6 +31,28 @@ public class CategoryController {
         return ResponseEntity.ok(ApiResponse.success(category));
     }
 
+    @GetMapping("/name/{name}")
+    public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryByName(@PathVariable String name) {
+        CategoryResponse category = categoryService.getCategoryByName(name);
+        return ResponseEntity.ok(ApiResponse.success(category));
+    }
+
+    // NEW: Get multiple categories by IDs (bulk fetch)
+    @GetMapping("/bulk/ids")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategoriesByIds(
+            @RequestParam List<Long> ids) {
+        List<CategoryResponse> categories = categoryService.getCategoriesByIds(ids);
+        return ResponseEntity.ok(ApiResponse.success(categories));
+    }
+
+    // NEW: Search categories by names (partial match)
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategoriesByNames(
+            @RequestParam String names) {
+        List<CategoryResponse> categories = categoryService.getCategoriesByName(names);
+        return ResponseEntity.ok(ApiResponse.success(categories));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
             @Valid @RequestBody CategoryRequest categoryRequest) {
