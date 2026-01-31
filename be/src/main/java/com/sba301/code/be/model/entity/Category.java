@@ -4,12 +4,13 @@ import com.sba301.code.be.model.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "category_tbl")
 @Getter
 @Setter
+@NoArgsConstructor
 public class Category {
 
     @Id
@@ -23,7 +24,7 @@ public class Category {
     private String description;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-    private List<Product> products;
+    private Set<Product> products;
 
     Product addProduct(Product product) {
         this.products.add(product);
