@@ -1,40 +1,51 @@
 package com.sba301.code.be.service;
 
+import com.sba301.code.be.dto.request.RoleRequest;
+import com.sba301.code.be.dto.response.RoleResponse;
 import com.sba301.code.be.model.entity.Role;
 import com.sba301.code.be.repository.RoleRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Service
 @AllArgsConstructor
+@Service
 public class RoleServiceImpl implements RoleService {
+
     private final RoleRepository roleRepository;
 
     @Override
-    public List<Role> getAllRoles() {
-        return roleRepository.findAll();
+    public List<RoleResponse> getAllRoles() {
+        return roleRepository.findAll()
+                .stream()
+                .map(RoleResponse::fromEntity)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Role getRoleById(long roleId) {
-        return roleRepository.findById(roleId)
+    public RoleResponse getRoleById(long roleId) {
+        Role role = roleRepository.findById(roleId)
                 .orElseThrow(() -> new IllegalArgumentException("Role not found with id: " + roleId));
+        return RoleResponse.fromEntity(role);
     }
 
     @Override
-    public Role createRole(Role role) {
-        role.setRoleId(null);
-        return roleRepository.save(role);
+    public RoleResponse createRole(RoleRequest roleRequest) {
+        Role toSave = roleRequest.toEntity();
+        toSave.setRoleId(null);
+        Role saved = roleRepository.save(toSave);
+        return RoleResponse.fromEntity(saved);
     }
 
     @Override
-    public Role updateRole(long roleId, Role role) {
-        Role existing = getRoleById(roleId);
-        // copy fields from incoming role to existing role; adjust as needed
-        existing.setRoleName(role.getRoleName());
-        return roleRepository.save(existing);
+    public RoleResponse updateRole(long roleId, RoleRequest roleRequest) {
+        Role existing = roleRepository.findById(roleId)
+                .orElseThrow(() -> new IllegalArgumentException("Role not found with id: " + roleId));
+        existing.setRoleName(roleRequest.getRoleName());
+        Role saved = roleRepository.save(existing);
+        return RoleResponse.fromEntity(saved);
     }
 
     @Override
