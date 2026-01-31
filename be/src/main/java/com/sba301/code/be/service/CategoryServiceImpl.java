@@ -4,12 +4,14 @@ import com.sba301.code.be.dto.request.CategoryRequest;
 import com.sba301.code.be.dto.response.CategoryResponse;
 import com.sba301.code.be.model.entity.Category;
 import com.sba301.code.be.repository.CategoryRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@AllArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
     @Autowired
     private CategoryRepository categoryRepository;

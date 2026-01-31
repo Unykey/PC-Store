@@ -1,8 +1,10 @@
 package com.sba301.code.be.controller;
 
 import com.sba301.code.be.dto.request.CategoryRequest;
+import com.sba301.code.be.dto.response.ApiResponse;
 import com.sba301.code.be.dto.response.CategoryResponse;
 import com.sba301.code.be.service.CategoryService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,31 +20,36 @@ public class CategoryController {
     private CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<List<CategoryResponse>> getAllCategories() {
-        return ResponseEntity.ok(categoryService.getAllCategories());
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
+        List<CategoryResponse> categories = categoryService.getAllCategories();
+        return ResponseEntity.ok(ApiResponse.success(categories));
     }
 
     @GetMapping("/{categoryId}")
-    public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable Long categoryId) {
+    public ResponseEntity<ApiResponse<CategoryResponse>> getCategoryById(@PathVariable Long categoryId) {
         CategoryResponse category = categoryService.getCategoryById(categoryId);
-        return category != null ? ResponseEntity.ok(category) : ResponseEntity.notFound().build();
+        return ResponseEntity.ok(ApiResponse.success(category));
     }
 
     @PostMapping
-    public ResponseEntity<CategoryResponse> createCategory(@RequestBody CategoryRequest categoryRequest) {
+    public ResponseEntity<ApiResponse<CategoryResponse>> createCategory(
+            @Valid @RequestBody CategoryRequest categoryRequest) {
         CategoryResponse createdCategory = categoryService.createCategory(categoryRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdCategory);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(createdCategory, "Category created successfully"));
     }
 
     @PutMapping("/{categoryId}")
-    public ResponseEntity<CategoryResponse> updateCategory(@PathVariable Long categoryId, @RequestBody CategoryRequest categoryRequest) {
+    public ResponseEntity<ApiResponse<CategoryResponse>> updateCategory(
+            @PathVariable Long categoryId,
+            @Valid @RequestBody CategoryRequest categoryRequest) {
         CategoryResponse updatedCategory = categoryService.updateCategory(categoryId, categoryRequest);
-        return ResponseEntity.ok(updatedCategory);
+        return ResponseEntity.ok(ApiResponse.success(updatedCategory, "Category updated successfully"));
     }
 
     @DeleteMapping("/{categoryId}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long categoryId) {
+    public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long categoryId) {
         categoryService.deleteCategory(categoryId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null, "Category deleted successfully"));
     }
 }
