@@ -1,5 +1,6 @@
 package com.sba301.code.be.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sba301.code.be.model.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
