@@ -2,7 +2,7 @@ package com.sba301.code.be.controller;
 
 import com.sba301.code.be.dto.request.CategoryRequest;
 import com.sba301.code.be.dto.response.CategoryResponse;
-import com.sba301.code.be.service.category.CategoryService;
+import com.sba301.code.be.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.sba301.code.be.service.category;
+package com.sba301.code.be.service;
 
 import com.sba301.code.be.dto.request.CategoryRequest;
 import com.sba301.code.be.dto.response.CategoryResponse;

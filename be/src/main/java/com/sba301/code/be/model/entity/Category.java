@@ -4,6 +4,7 @@ import com.sba301.code.be.model.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
@@ -24,7 +25,7 @@ public class Category {
     private String description;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-    private Set<Product> products;
+    private Set<Product> products = new HashSet<>();
 
     Product addProduct(Product product) {
         this.products.add(product);

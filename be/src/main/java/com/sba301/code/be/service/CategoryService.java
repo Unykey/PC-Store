@@ -1,8 +1,7 @@
-package com.sba301.code.be.service.category;
+package com.sba301.code.be.service;
 
 import com.sba301.code.be.dto.request.CategoryRequest;
 import com.sba301.code.be.dto.response.CategoryResponse;
-import com.sba301.code.be.model.entity.Category;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
