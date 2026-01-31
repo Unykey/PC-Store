@@ -1,16 +1,13 @@
 package com.sba301.code.be.model.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Data;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
 @Entity
-@Table(name = "category")
-@Getter
-@Setter
-@NoArgsConstructor
+@Table(name = "categories")
+@Data
 public class Category {
 
     @Id
@@ -23,6 +20,6 @@ public class Category {
     @Column(nullable = false, length = 500)
     private String description;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-    private Set<Product> products = new HashSet<>();
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)//MTM
+    private List<Product> products;
 }

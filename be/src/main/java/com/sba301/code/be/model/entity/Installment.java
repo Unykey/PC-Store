@@ -1,18 +1,13 @@
 package com.sba301.code.be.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "installment")
-@Getter
-@Setter
-@NoArgsConstructor
+@Table(name = "installments")
+@Data
 public class Installment {
 
     @Id
@@ -26,10 +21,10 @@ public class Installment {
     private String status;
 
     @Column(nullable = false)
-    private BigDecimal amountPaid;
+    private float amountPaid;
 
     @Column(nullable = false)
-    private LocalDateTime transactionDate = LocalDateTime.now();
+    private LocalDateTime transactionDate;
 
     @ManyToOne
     @JoinColumn(name = "order_id")

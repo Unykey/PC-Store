@@ -8,6 +8,7 @@ import com.sba301.code.be.model.entity.Role;
 import com.sba301.code.be.repository.AccountRepository;
 import com.sba301.code.be.repository.RoleRepository;
 import com.sba301.code.be.security.JwtTokenProvider;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,17 +20,13 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@AllArgsConstructor
 public class AccountServiceImpl implements AccountService{
 
-    @Autowired
     private AccountRepository accountRepository;
-    @Autowired
     private RoleRepository roleRepository;
-    @Autowired
     private AuthenticationManager authenticationManager;
-    @Autowired
     private JwtTokenProvider jwtTokenProvider;
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Override

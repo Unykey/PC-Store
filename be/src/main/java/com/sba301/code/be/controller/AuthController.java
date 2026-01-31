@@ -12,17 +12,14 @@ import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@AllArgsConstructor
 @RestController
 @RequestMapping("/api/auth")
+@AllArgsConstructor
 public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
@@ -31,12 +28,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<JWTAuthResponse>> authenticateUser(@RequestBody LoginDto loginDto) {
         JWTAuthResponse jwtAuthResponse = accountService.authenticateUser(loginDto);
-        return ResponseEntity.ok(ApiResponse.success(jwtAuthResponse, "Login successfully"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), jwtAuthResponse, "Login successfully"));
     }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<String>> registerUser(@RequestBody RegisterDto registerDto) {
         String message = accountService.registerUser(registerDto);
-        return ResponseEntity.ok(ApiResponse.success(message, "User registered successfully!"));
+        return ResponseEntity.ok(ApiResponse.success(HttpStatus.CREATED.value(), message, "User registered successfully!"));
     }
 }

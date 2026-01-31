@@ -2,17 +2,13 @@ package com.sba301.code.be.model.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "order_detail")
-@Getter
-@Setter
-@NoArgsConstructor
+@Table(name = "order_details")
+@Data
 public class OrderDetail {
 
     @Id
@@ -24,7 +20,7 @@ public class OrderDetail {
     private int quantity;
 
     @Column(nullable = false)
-    @Min(0)
+    @Min(1)
     private BigDecimal priceAtPurchase;
 
     @ManyToOne

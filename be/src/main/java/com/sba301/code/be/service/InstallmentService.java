@@ -8,8 +8,8 @@ import java.util.List;
 @Service
 public interface InstallmentService {
     public List<Installment> getAllInstallments();
-    public Installment getInstallmentById(int installmentId);
+    public Installment getInstallmentById(Long installmentId);
     public Installment createInstallment(Installment installment);
-    public Installment updateInstallment(int installmentId, Installment installment);
-    public void deleteInstallment(int installmentId);
+    public Installment updateInstallment(Long installmentId, Installment installment);
+    public void deleteInstallment(Long installmentId);
 }
