@@ -7,7 +7,7 @@ import lombok.*;
 import java.util.Set;
 
 @Entity
-@Table(name = "category_tbl")
+@Table(name = "category")
 @Getter
 @Setter
 @NoArgsConstructor
