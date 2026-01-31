@@ -1,5 +1,6 @@
 package com.sba301.code.be.model.entity;
 
+import com.sba301.code.be.model.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,4 +26,16 @@ public class Category {
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
     private Set<Product> products = new HashSet<>();
+
+    Product addProduct(Product product) {
+        this.products.add(product);
+        product.setCategory(this);
+        return product;
+    }
+
+    Product removeProduct(Product product) {
+        this.products.remove(product);
+        product.setCategory(null);
+        return product;
+    }
 }

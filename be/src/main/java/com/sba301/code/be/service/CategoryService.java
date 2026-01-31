@@ -1,15 +1,16 @@
 package com.sba301.code.be.service;
 
-import com.sba301.code.be.model.entity.Category;
+import com.sba301.code.be.dto.request.CategoryRequest;
+import com.sba301.code.be.dto.response.CategoryResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public interface CategoryService {
-    public List<Category> getAllCategories();
-    public Category getCategoryById(int categoryId);
-    public Category createCategory(Category category);
-    public Category updateCategory(int categoryId, Category category);
-    public void deleteCategory(int categoryId);
+    public List<CategoryResponse> getAllCategories();
+    public CategoryResponse getCategoryById(Long CategoryId);
+    public CategoryResponse createCategory(CategoryRequest category);
+    public CategoryResponse updateCategory(Long CategoryId, CategoryRequest category);
+    public void deleteCategory(Long categoryId);
 }
