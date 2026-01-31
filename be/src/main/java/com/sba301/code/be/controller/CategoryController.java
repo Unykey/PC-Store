@@ -3,6 +3,7 @@ package com.sba301.code.be.controller;
 import com.sba301.code.be.dto.request.CategoryRequest;
 import com.sba301.code.be.dto.response.CategoryResponse;
 import com.sba301.code.be.service.CategoryService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,10 +13,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/categories")
+@AllArgsConstructor
 public class CategoryController {
-
-    @Autowired
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
 
     @GetMapping
     public ResponseEntity<List<CategoryResponse>> getAllCategories() {

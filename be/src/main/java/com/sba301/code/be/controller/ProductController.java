@@ -3,6 +3,7 @@ package com.sba301.code.be.controller;
 import com.sba301.code.be.dto.request.ProductRequest;
 import com.sba301.code.be.dto.response.ProductResponse;
 import com.sba301.code.be.service.ProductService;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,10 +13,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/products")
+@AllArgsConstructor
 public class ProductController {
 
-    @Autowired
-    private ProductService productService;
+    private final ProductService productService;
 
     @GetMapping
     public ResponseEntity<List<ProductResponse>> getAllProducts() {

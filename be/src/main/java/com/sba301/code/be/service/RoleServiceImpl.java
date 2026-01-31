@@ -2,6 +2,7 @@ package com.sba301.code.be.service;
 
 import com.sba301.code.be.model.entity.Role;
 import com.sba301.code.be.repository.RoleRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -9,7 +10,6 @@ import java.util.List;
 @Service
 @AllArgsConstructor
 public class RoleServiceImpl implements RoleService {
-
     private final RoleRepository roleRepository;
 
     @Override

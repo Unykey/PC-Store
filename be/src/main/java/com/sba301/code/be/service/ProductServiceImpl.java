@@ -9,6 +9,7 @@ import com.sba301.code.be.model.entity.Category;
 import com.sba301.code.be.model.entity.Product;
 import com.sba301.code.be.repository.CategoryRepository;
 import com.sba301.code.be.repository.ProductRepository;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +17,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class ProductServiceImpl implements ProductService {
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
     @Override
     public List<ProductResponse> getAllProducts() {
