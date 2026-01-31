@@ -7,13 +7,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@AllArgsConstructor
 public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepository;
-
-    public RoleServiceImpl(RoleRepository roleRepository) {
-        this.roleRepository = roleRepository;
-    }
 
     @Override
     public List<Role> getAllRoles() {
