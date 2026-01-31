@@ -7,10 +7,9 @@ import lombok.*;
 import java.util.List;
 
 @Entity
-@Table(name = "category")
+@Table(name = "category_tbl")
 @Getter
 @Setter
-@NoArgsConstructor
 public class Category {
 
     @Id
