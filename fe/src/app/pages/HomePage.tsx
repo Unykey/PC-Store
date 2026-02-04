@@ -1,11 +1,11 @@
 // src/app/pages/HomePage.tsx
-import {Banner} from '../Banner.tsx';
-import {ProductCard} from '../ProductCard.tsx';
-import {ServiceCard} from '../ServiceCard.tsx';
+import {Banner} from '../components/Banner.tsx';
+import {ProductCard} from '../components/ProductCard.tsx';
+import {ServiceCard} from '../components/ServiceCard.tsx';
 import {Wrench, Shield, Cpu, Phone} from 'lucide-react';
 import { Mail } from 'lucide-react'; // Thêm icon Mail
-import { Input } from '../ui/input'; // Component Input của Shadcn
-import { Button } from '../ui/button'; // Component Button của Shadcn
+import { Input } from '../components/ui/input.tsx'; // Component Input của Shadcn
+import { Button } from '../components/ui/button.tsx'; // Component Button của Shadcn
 
 export default function HomePage() {
     // Mock Data cho Products

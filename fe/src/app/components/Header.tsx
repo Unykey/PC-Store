@@ -1,4 +1,4 @@
-import {Link} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import {Search, Bell, User, ShoppingCart} from 'lucide-react';
 import {MegaMenu} from './MegaMenu';
 
@@ -7,6 +7,8 @@ interface HeaderProps {
 }
 
 export function Header({onMenuToggle}: HeaderProps) {
+    const navigate = useNavigate();
+
     const quickLinks = [
         {name: 'iPhone 17', path: '#'}, // Để tạm # do chưa có trang
         {name: 'MacBook Air M4', path: '#'},
@@ -24,14 +26,14 @@ export function Header({onMenuToggle}: HeaderProps) {
                     <div className="max-w-[1400px] mx-auto px-4 py-3">
                         <div className="flex items-center gap-4">
                             {/* Logo */}
-                            <div className="flex items-center gap-3 flex-shrink-0">
+                            <Link to="/" className="flex items-center gap-3 flex-shrink-0">
                                 <div className="grid grid-cols-2 gap-0.5 w-8 h-8">
                                     <div className="bg-[#4FC3F7] rounded-sm"></div>
                                     <div className="bg-[#4FC3F7] rounded-sm"></div>
                                     <div className="bg-[#4FC3F7] rounded-sm"></div>
                                     <div className="bg-[#4FC3F7] rounded-sm"></div>
                                 </div>
-                            </div>
+                            </Link>
 
                             {/* Danh mục sản phẩm - Moved here */}
                             <div className="flex-shrink-0">
@@ -57,6 +59,7 @@ export function Header({onMenuToggle}: HeaderProps) {
                             <div className="flex items-center gap-6 flex-shrink-0">
                                 {/* User Login */}
                                 <button
+                                    onClick={() => navigate('/login')}
                                     className="flex items-center gap-2 text-gray-700 hover:text-[#f37021] transition-colors">
                                     <div
                                         className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center">

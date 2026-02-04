@@ -20,12 +20,12 @@ import {
     TrendingUp,
     CheckCircle2
 } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { ScrollArea } from '../ui/scroll-area';
-import { Separator } from '../ui/separator';
+import { Button } from '../components/ui/button.tsx';
+import { Input } from '../components/ui/input.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.tsx';
+import { Badge } from '../components/ui/badge.tsx';
+import { ScrollArea } from '../components/ui/scroll-area.tsx';
+import { Separator } from '../components/ui/separator.tsx';
 
 // Định dạng tiền tệ VND
 const formatCurrency = (amount: number) => {
