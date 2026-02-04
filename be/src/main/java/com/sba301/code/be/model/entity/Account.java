@@ -18,11 +18,14 @@ public class Account {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long accountId;
 
-    @Column(nullable = false, length = 50)
-    private String accountName;
+    @Column(nullable = false, length = 100)
+    private String fullName;
 
     @Column(unique = true, nullable = false, length = 100)
     private String email;
+
+    @Column(length = 15)
+    private String phoneNumber;
 
     @Column(nullable = false, length = 255)
     private String password;

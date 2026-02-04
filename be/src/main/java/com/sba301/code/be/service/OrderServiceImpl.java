@@ -145,7 +145,7 @@ public class OrderServiceImpl implements OrderService {
 
         if (order.getAccount() != null) {
             response.setAccountId(order.getAccount().getAccountId());
-            response.setAccountName(order.getAccount().getAccountName());
+            response.setAccountName(order.getAccount().getFullName());
         }
 
         if (order.getOrderDetails() != null) {
@@ -172,7 +172,7 @@ public class OrderServiceImpl implements OrderService {
         if (response.getAccountId() != null) {
             Account account = new Account();
             account.setAccountId(response.getAccountId());
-            account.setAccountName(response.getAccountName());
+            account.setFullName(response.getAccountName());
             order.setAccount(account);
         }
 
