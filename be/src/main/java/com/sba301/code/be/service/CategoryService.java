@@ -13,4 +13,7 @@ public interface CategoryService {
     public CategoryResponse createCategory(CategoryRequest category);
     public CategoryResponse updateCategory(Long CategoryId, CategoryRequest category);
     public void deleteCategory(Long categoryId);
+    public CategoryResponse getCategoryByName(String name);
+    public List<CategoryResponse> getCategoriesByIds(List<Long> categoryIds);
+    public List<CategoryResponse> getCategoriesByName(String Name);
 }

@@ -53,6 +53,28 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.deleteById(categoryId);
     }
 
+    @Override
+    public CategoryResponse getCategoryByName(String name) {
+        Category category = categoryRepository.findByName(name).orElseThrow(() -> new RuntimeException("Category not found"));
+        return convertToResponse(category);
+    }
+
+    @Override
+    public List<CategoryResponse> getCategoriesByIds(List<Long> categoryIds) {
+        List<Category> categories = categoryRepository.findAllById(categoryIds);
+        return categories.stream()
+                .map(this::convertToResponse)
+                .toList();
+    }
+
+    @Override
+    public List<CategoryResponse> getCategoriesByName(String categoryName) {
+        List<Category> categories = categoryRepository.findAllByNameContainingIgnoreCase(categoryName);
+        return categories.stream()
+                .map(this::convertToResponse)
+                .toList();
+    }
+
     private CategoryResponse convertToResponse(Category category) {
         CategoryResponse response = new CategoryResponse();
         response.setCategoryId(category.getCategoryId());
