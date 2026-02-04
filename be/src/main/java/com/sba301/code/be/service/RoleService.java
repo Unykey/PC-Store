@@ -1,15 +1,14 @@
 package com.sba301.code.be.service;
 
-import com.sba301.code.be.model.entity.Role;
-import org.springframework.stereotype.Service;
+import com.sba301.code.be.dto.request.RoleRequest;
+import com.sba301.code.be.dto.response.RoleResponse;
 
 import java.util.List;
 
-@Service
 public interface RoleService {
-    public List<Role> getAllRoles();
-    public Role getRoleById(int roleId);
-    public Role createRole(Role role);
-    public Role updateRole(int roleId, Role role);
-    public void deleteRole(int roleId);
+    List<RoleResponse> getAllRoles();
+    RoleResponse getRoleById(long roleId);
+    RoleResponse createRole(RoleRequest roleRequest);
+    RoleResponse updateRole(long roleId, RoleRequest roleRequest);
+    void deleteRole(long roleId);
 }
