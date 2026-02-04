@@ -80,8 +80,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+    public List<OrderResponse> getAllOrders() {
+        return orderRepository.findAll().stream().map(this::mapToResponse).toList();
     }
 
     @Override
@@ -108,8 +108,32 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void deleteOrder(Long orderId) {
-        orderRepository.deleteById(orderId);
+    public OrderResponse cancelOrder(Long orderId, Long accountId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        // 1. Check quyền: Phải đúng là đơn của người này
+        if (!order.getAccount().getAccountId().equals(accountId)) {
+            throw new RuntimeException("Bạn không có quyền hủy đơn hàng này");
+        }
+
+        // 2. Check trạng thái: Chỉ được hủy khi đang chờ (PENDING)
+        if (order.getOrderStatus() != OrderStatus.PENDING) {
+            throw new RuntimeException("Đơn hàng đã được duyệt hoặc đang giao, không thể hủy!");
+        }
+
+        // 3. Thực hiện hủy
+        order.setOrderStatus(OrderStatus.CANCELLED);
+
+        // 4. (Quan trọng) Hoàn lại số lượng tồn kho cho sản phẩm
+        for (OrderDetail detail : order.getOrderDetails()) {
+            Product p = detail.getProduct();
+            p.setStockQuantity(p.getStockQuantity() + detail.getQuantity());
+            productRepository.save(p);
+        }
+
+        Order saved = orderRepository.save(order);
+        return mapToResponse(saved);
     }
 
     private OrderResponse mapToResponse(Order order) {

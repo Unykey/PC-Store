@@ -27,10 +27,34 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success(newOrder, "Order placed successfully"));
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getAllOrders() {
+        List<OrderResponse> orders = orderService.getAllOrders();
+        return ResponseEntity.ok(ApiResponse.success(orders, "Get all orders successfully"));
+    }
+
     @GetMapping("/my-orders")
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getMyOrders(@AuthenticationPrincipal CustomUserDetails currentUser) {
         List<OrderResponse> orders = orderService.getOrdersByAccountId(currentUser.getAccountId());
         return ResponseEntity.ok(ApiResponse.success(orders, "Get my orders successfully"));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        OrderResponse order = orderService.getOrderById(id);
+        return ResponseEntity.ok(ApiResponse.success(order, "Get order by id successfully"));
+    }
+
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelOrder(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+
+        // Logic service: Only allow cancelation if status == PENDING and belongs to the correct owner
+        OrderResponse cancelledOrder = orderService.cancelOrder(id, currentUser.getAccountId());
+        return ResponseEntity.ok(ApiResponse.success(cancelledOrder, "Order canceled successfully"));
     }
 
     @PutMapping("/{id}/status")
