@@ -30,7 +30,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return account.getAccountName();
+        return account.getEmail();
     }
 
     // Các thông tin bắt buộc khác của UserDetails (để mặc định là true)
@@ -51,7 +51,7 @@ public class CustomUserDetails implements UserDetails {
         return account.getAccountId();
     }
 
-    public String getEmail() {
-        return account.getEmail();
+    public String getFullName() {
+        return account.getFullName();
     }
 }
