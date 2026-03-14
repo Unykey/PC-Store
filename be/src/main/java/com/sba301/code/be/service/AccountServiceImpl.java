@@ -8,6 +8,7 @@ import com.sba301.code.be.model.entity.Role;
 import com.sba301.code.be.repository.AccountRepository;
 import com.sba301.code.be.repository.RoleRepository;
 import com.sba301.code.be.security.JwtTokenProvider;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -19,18 +20,14 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@AllArgsConstructor
 public class AccountServiceImpl implements AccountService{
+    private final AccountRepository accountRepository;
+    private final RoleRepository roleRepository;
+    private final AuthenticationManager authenticationManager;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private AccountRepository accountRepository;
-    @Autowired
-    private RoleRepository roleRepository;
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Override
     public List<Account> getAllAccounts() {
@@ -63,7 +60,7 @@ public class AccountServiceImpl implements AccountService{
         // 1. Xác thực qua AuthenticationManager
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        loginDto.getUsernameOrEmail(),
+                        loginDto.getEmail(),
                         loginDto.getPassword()
                 )
         );
@@ -81,18 +78,15 @@ public class AccountServiceImpl implements AccountService{
     @Override
     public String registerUser(RegisterDto registerDto) {
         // 1. Check tồn tại
-        if (accountRepository.existsByAccountName(registerDto.getAccountName())) {
-            throw new RuntimeException("Username already exists!"); // Nên dùng Custom Exception
-        }
         if (accountRepository.existsByEmail(registerDto.getEmail())) {
             throw new RuntimeException("Email already exists!"); // Nên dùng Custom Exception
         }
-        // if (accountRepository.existsByEmail(registerDto.getEmail())) ...
 
         // 2. Tạo Entity
         Account account = new Account();
-        account.setAccountName(registerDto.getAccountName());
+        account.setFullName(registerDto.getFullName());
         account.setEmail(registerDto.getEmail());
+        account.setPhoneNumber(registerDto.getPhoneNumber());
         account.setPassword(passwordEncoder.encode(registerDto.getPassword()));
 
         // 3. Gán Role mặc định (CUSTOMER)

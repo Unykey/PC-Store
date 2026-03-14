@@ -89,8 +89,9 @@ public class DataSeeder implements CommandLineRunner {
 
         // Tạo 1 Admin cứng để test
         Account admin = new Account();
-        admin.setAccountName("admin");
+        admin.setFullName("admin");
         admin.setEmail("admin@pcstore.com");
+        admin.setPhoneNumber("0987654321");
         admin.setPassword(passwordEncoder.encode("admin123")); // Lưu ý: Thực tế cần mã hóa BCrypt
         admin.setRole(adminRole);
         accounts.add(admin);
@@ -98,13 +99,16 @@ public class DataSeeder implements CommandLineRunner {
         // Tạo 20 User ngẫu nhiên
         for (int i = 0; i < 20; i++) {
             Account acc = new Account();
-            String rawName = faker.name().firstName().toLowerCase()
-                    + faker.number().digits(3);
-            if (rawName.length() > 20) {
-                rawName = rawName.substring(0, 20);
-            }
-            acc.setAccountName(rawName);
+            String rawName = faker.name().fullName();
+            acc.setFullName(rawName);
             acc.setEmail(faker.internet().emailAddress());
+
+            // Generate a valid Vietnamese phone number
+            String[] validPrefixes = {"03", "05", "07", "08", "09"}; // Mobile phone prefixes
+            String prefix = validPrefixes[faker.number().numberBetween(0, validPrefixes.length)];
+            String phoneNumber = prefix + faker.number().digits(9); // Add 9 random digits after the prefix
+
+            acc.setPhoneNumber(phoneNumber);
             acc.setPassword(passwordEncoder.encode("123456")); // Password mặc định
             acc.setRole(customerRole);
             accounts.add(acc);

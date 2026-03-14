@@ -2,8 +2,10 @@ import {Routes, Route} from 'react-router-dom';
 import {Header} from './components/Header';
 import {Footer} from './components/Footer'; // Import Footer mới
 import {MegaMenu} from './components/MegaMenu'; // Nếu MegaMenu nằm riêng
-import HomePage from './components/pages/HomePage'; // Import HomePage mới
-import BuildPC from './components/pages/BuildPC'; // Import BuildPC đã làm trước đó
+import HomePage from './pages/HomePage'; // Import HomePage mới
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import BuildPC from './pages/BuildPC'; // Import BuildPC đã làm trước đó
 
 export default function App() {
     return (
@@ -16,6 +18,8 @@ export default function App() {
             <main className="flex-1 pt-[80px]">
                 <Routes>
                     <Route path="/" element={<HomePage/>}/>
+                    <Route path="/login" element={<LoginPage/>} />
+                    <Route path="/register" element={<RegisterPage/>} />
                     <Route path="/build-pc" element={<BuildPC/>}/>
                 </Routes>
             </main>

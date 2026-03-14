@@ -22,4 +22,17 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error(500, "Error System: " + ex.getMessage()));
     }
+
+    // Thêm method này để bắt lỗi @Valid
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Object>> handleValidationExceptions(org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        StringBuilder errors = new StringBuilder();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String errorMessage = error.getDefaultMessage();
+            errors.append(errorMessage).append("; ");
+        });
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(400, "Lỗi dữ liệu: " + errors.toString()));
+    }
 }
