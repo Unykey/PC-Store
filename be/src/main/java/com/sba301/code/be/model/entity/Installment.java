@@ -1,12 +1,13 @@
 package com.sba301.code.be.model.entity;
 
+import com.sba301.code.be.model.enums.InstallmentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "installment")
@@ -16,22 +17,29 @@ import java.time.LocalDateTime;
 public class Installment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long paymentId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
+    /** Which month this installment is (1 = first month, 2 = second, ...) */
     @Column(nullable = false)
-    private String method;
+    private int monthNumber;
 
+    /** Scheduled due date for this installment */
     @Column(nullable = false)
-    private String status;
+    private LocalDate dueDate;
 
+    /** Actual date the customer paid; null if not yet paid */
+    private LocalDate paidDate;
+
+    /** Amount due for this installment */
     @Column(nullable = false)
-    private BigDecimal amountPaid;
+    private BigDecimal amount;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private LocalDateTime transactionDate = LocalDateTime.now();
+    private InstallmentStatus installmentStatus = InstallmentStatus.PENDING;
 
-    @ManyToOne
-    @JoinColumn(name = "order_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 }
