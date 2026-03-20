@@ -33,10 +33,7 @@ public class AccountController {
         List<AccountResponse> accountResponses = new ArrayList<>();
         for (Account account : accounts) {
             AccountResponse accountResponse = new AccountResponse();
-<<<<<<< Updated upstream
-=======
             accountResponse.setAccountName(account.getFullName());
->>>>>>> Stashed changes
             accountResponse.setPassword(account.getPassword());
             accountResponse.setEmail(account.getEmail());
             accountResponses.add(accountResponse);
@@ -49,10 +46,7 @@ public class AccountController {
         Account account  = accountService.getAccountById(id);
 
         AccountResponse accountResponse = new AccountResponse();
-<<<<<<< Updated upstream
-=======
         accountResponse.setAccountName(account.getFullName());
->>>>>>> Stashed changes
         accountResponse.setPassword(account.getPassword());
         accountResponse.setEmail(account.getEmail());
 
@@ -67,19 +61,13 @@ public class AccountController {
     @PutMapping("{id}")
     public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(@PathVariable Long id, @RequestBody RegisterDto request) {
         Account account = new Account();
-<<<<<<< Updated upstream
-=======
         account.setFullName(request.getFullName());
->>>>>>> Stashed changes
         account.setEmail(request.getEmail());
         account.setPassword(request.getPassword());
         Account updatedAccount = accountService.updateAccount(id, account);
 
         AccountResponse accountResponse = new AccountResponse();
-<<<<<<< Updated upstream
-=======
         accountResponse.setAccountName(updatedAccount.getFullName());
->>>>>>> Stashed changes
         accountResponse.setPassword(updatedAccount.getPassword());
         accountResponse.setEmail(updatedAccount.getEmail());
 

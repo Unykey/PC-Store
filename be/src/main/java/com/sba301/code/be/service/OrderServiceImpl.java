@@ -161,43 +161,23 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-<<<<<<< Updated upstream
-        // 1. Check quyền: Phải đúng là đơn của người này
-=======
->>>>>>> Stashed changes
         if (!order.getAccount().getAccountId().equals(accountId)) {
             throw new RuntimeException("Bạn không có quyền hủy đơn hàng này");
         }
 
-<<<<<<< Updated upstream
-        // 2. Check trạng thái: Chỉ được hủy khi đang chờ (PENDING)
-=======
->>>>>>> Stashed changes
         if (order.getOrderStatus() != OrderStatus.PENDING) {
             throw new RuntimeException("Đơn hàng đã được duyệt hoặc đang giao, không thể hủy!");
         }
 
-<<<<<<< Updated upstream
-        // 3. Thực hiện hủy
         order.setOrderStatus(OrderStatus.CANCELLED);
 
-        // 4. (Quan trọng) Hoàn lại số lượng tồn kho cho sản phẩm
-=======
-        order.setOrderStatus(OrderStatus.CANCELLED);
-
->>>>>>> Stashed changes
         for (OrderDetail detail : order.getOrderDetails()) {
             Product p = detail.getProduct();
             p.setStockQuantity(p.getStockQuantity() + detail.getQuantity());
             productRepository.save(p);
         }
 
-<<<<<<< Updated upstream
-        Order saved = orderRepository.save(order);
-        return mapToResponse(saved);
-=======
         return mapToResponse(orderRepository.save(order));
->>>>>>> Stashed changes
     }
 
     private OrderResponse mapToResponse(Order order) {
@@ -256,39 +236,4 @@ public class OrderServiceImpl implements OrderService {
 
         return response;
     }
-<<<<<<< Updated upstream
-
-    private Order mapToOrder(OrderResponse response) {
-        Order order = new Order();
-        order.setOrderId(response.getOrderId());
-        order.setOrderDate(response.getOrderDate());
-        order.setOrderStatus(response.getOrderStatus());
-        order.setTotalAmount(response.getTotalAmount());
-
-        if (response.getAccountId() != null) {
-            Account account = new Account();
-            account.setAccountId(response.getAccountId());
-            account.setFullName(response.getAccountName());
-            order.setAccount(account);
-        }
-
-        if (response.getOrderDetails() != null) {
-            Set<OrderDetail> orderDetails = response.getOrderDetails().stream().map(detailRes -> {
-                OrderDetail orderDetail = new OrderDetail();
-                Product product = new Product();
-                product.setProductId(detailRes.getProductId());
-                product.setName(detailRes.getProductName());
-
-                orderDetail.setProduct(product);
-                orderDetail.setQuantity(detailRes.getQuantity());
-                orderDetail.setPriceAtPurchase(detailRes.getPrice());
-                orderDetail.setOrder(order);
-                return orderDetail;
-            }).collect(Collectors.toSet());
-            order.setOrderDetails(orderDetails);
-        }
-        return order;
-    }
-=======
->>>>>>> Stashed changes
 }

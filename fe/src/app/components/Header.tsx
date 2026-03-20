@@ -1,22 +1,12 @@
-<<<<<<< Updated upstream
-import {Link, useNavigate} from 'react-router-dom';
-import {Search, Bell, User, ShoppingCart} from 'lucide-react';
-import {MegaMenu} from './MegaMenu';
-=======
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Bell, User, ShoppingCart } from 'lucide-react';
 import { MegaMenu } from './MegaMenu';
->>>>>>> Stashed changes
 
 interface HeaderProps {
     onMenuToggle?: () => void;
 }
 
-<<<<<<< Updated upstream
-export function Header({onMenuToggle}: HeaderProps) {
-=======
 export function Header(_: HeaderProps) {
->>>>>>> Stashed changes
     const navigate = useNavigate();
 
     const quickLinks = [

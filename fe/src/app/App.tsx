@@ -1,25 +1,15 @@
-<<<<<<< Updated upstream
-import {Routes, Route} from 'react-router-dom';
-import {Header} from './components/Header';
-import {Footer} from './components/Footer'; // Import Footer mới
-import {MegaMenu} from './components/MegaMenu'; // Nếu MegaMenu nằm riêng
-=======
 import { Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer'; // Import Footer mới
->>>>>>> Stashed changes
 import HomePage from './pages/HomePage'; // Import HomePage mới
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import BuildPC from './pages/BuildPC'; // Import BuildPC đã làm trước đó
-<<<<<<< Updated upstream
-=======
 import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import MyInstallmentsPage from './pages/MyInstallmentsPage';
 import { ComparisonPage } from './pages/ComparisonPage';
->>>>>>> Stashed changes
 
 export default function App() {
     return (
@@ -31,12 +21,10 @@ export default function App() {
             {/* Thêm pt-20 hoặc pt-28 tùy độ cao header để tránh nội dung bị che */}
             <main className="flex-1 pt-[80px]">
                 <Routes>
-<<<<<<< Updated upstream
                     <Route path="/" element={<HomePage/>}/>
                     <Route path="/login" element={<LoginPage/>} />
                     <Route path="/register" element={<RegisterPage/>} />
                     <Route path="/build-pc" element={<BuildPC/>}/>
-=======
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
@@ -46,7 +34,6 @@ export default function App() {
                     <Route path="/orders/:id" element={<OrderDetailPage />} />
                     <Route path="/my-installments" element={<MyInstallmentsPage />} />
                     <Route path="/comparison" element={<ComparisonPage />} />
->>>>>>> Stashed changes
                 </Routes>
             </main>
 

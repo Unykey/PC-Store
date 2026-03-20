@@ -10,6 +10,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AccountResponse {
+    private String accountName;
     private String password;
     private String email;
 }
