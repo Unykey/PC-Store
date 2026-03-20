@@ -9,6 +9,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import MyInstallmentsPage from './pages/MyInstallmentsPage';
+import { AdminDashboard } from './components/AdminDashboard'; // added admin import
 
 export default function App() {
     return (
@@ -28,6 +29,9 @@ export default function App() {
                     <Route path="/orders" element={<OrdersPage />} />
                     <Route path="/orders/:id" element={<OrderDetailPage />} />
                     <Route path="/my-installments" element={<MyInstallmentsPage />} />
+
+                    {/* Admin route - no auth for now */}
+                    <Route path="/admin" element={<AdminDashboard />} />
                 </Routes>
             </main>
 
