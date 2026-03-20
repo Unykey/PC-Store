@@ -10,6 +10,7 @@ import java.util.List;
 @Getter
 @Setter
 public class OrderCreateRequest {
+    /** Optional. Will be overridden by authenticated user in controller. */
     private Long accountId;
     private String shippingAddress;
     private String note;

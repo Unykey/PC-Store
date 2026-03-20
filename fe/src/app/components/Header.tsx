@@ -17,9 +17,8 @@ export function Header(_: HeaderProps) {
         { name: 'Màn Hình', path: '#' },
         { name: 'VGA', path: '#' },
         { name: 'Build PC', path: '/build-pc' },
-        { name: 'Thanh toán', path: '/checkout' },
-        { name: 'Đơn hàng', path: '/orders' },
-        { name: 'Lịch trả góp', path: '/my-installments' }
+        { name: 'Đơn hàng (demo nhanh)', path: '/orders' },
+        { name: 'Lịch trả góp (demo nhanh)', path: '/my-installments' }
     ];
 
     return (
@@ -81,10 +80,11 @@ export function Header(_: HeaderProps) {
 
                                 {/* Shopping Cart */}
                                 <button
+                                    onClick={() => navigate('/checkout')}
                                     className="relative flex items-center gap-2 text-gray-700 hover:text-[#f37021] transition-colors">
                                     <ShoppingCart size={24} />
                                     <div className="text-left hidden lg:block">
-                                        <div className="text-xs text-gray-500">Giỏ hàng của bạn</div>
+                                        <div className="text-xs text-gray-500">Giỏ hàng / Thanh toán</div>
                                         <div className="text-sm font-medium">(1) sản phẩm</div>
                                     </div>
                                 </button>

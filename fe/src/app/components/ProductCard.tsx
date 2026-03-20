@@ -1,6 +1,8 @@
 import { ShoppingCart, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface ProductCardProps {
+  id: number;
   image: string;
   name: string;
   price: string;
@@ -10,18 +12,19 @@ interface ProductCardProps {
   inStock?: boolean;
 }
 
-export function ProductCard({ 
-  image, 
-  name, 
-  price, 
-  oldPrice, 
+export function ProductCard({
+  id,
+  image,
+  name,
+  price,
+  oldPrice,
   rating = 4.5,
   discount,
-  inStock = true 
+  inStock = true
 }: ProductCardProps) {
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group border border-gray-200 hover:border-[#0066b3]">
-      <div className="relative overflow-hidden bg-gray-100">
+      <Link to={`/product/${id}`} className="relative block overflow-hidden bg-gray-100">
         {discount && (
           <div className="absolute top-2 left-2 bg-[#0db14b] text-white px-2 py-1 rounded-md text-sm z-10">
             -{discount}
@@ -32,23 +35,25 @@ export function ProductCard({
             <span className="bg-red-500 text-white px-4 py-2 rounded-md">Hết hàng</span>
           </div>
         )}
-        <img 
-          src={image} 
+        <img
+          src={image}
           alt={name}
           className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
         />
-      </div>
-      
+      </Link>
+
       <div className="p-4">
-        <h3 className="text-gray-800 mb-2 line-clamp-2 h-12 group-hover:text-[#0066b3] transition-colors">
-          {name}
-        </h3>
-        
+        <Link to={`/product/${id}`}>
+          <h3 className="text-gray-800 mb-2 line-clamp-2 h-12 group-hover:text-[#0066b3] transition-colors">
+            {name}
+          </h3>
+        </Link>
+
         <div className="flex items-center gap-1 mb-2">
           {[...Array(5)].map((_, i) => (
-            <Star 
+            <Star
               key={i}
-              size={14} 
+              size={14}
               className={i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
             />
           ))}
@@ -64,13 +69,15 @@ export function ProductCard({
           </div>
         </div>
 
-        <button 
-          className="w-full bg-[#f37021] text-white py-2 px-4 rounded-md flex items-center justify-center gap-2 hover:bg-[#d45f1a] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-          disabled={!inStock}
-        >
-          <ShoppingCart size={18} />
-          <span>{inStock ? 'Mua ngay' : 'Hết hàng'}</span>
-        </button>
+        <Link to={`/product/${id}`}>
+          <button
+            className="w-full bg-[#f37021] text-white py-2 px-4 rounded-md flex items-center justify-center gap-2 hover:bg-[#d45f1a] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+            disabled={!inStock}
+          >
+            <ShoppingCart size={18} />
+            <span>{inStock ? 'Mua ngay' : 'Hết hàng'}</span>
+          </button>
+        </Link>
       </div>
     </div>
   );

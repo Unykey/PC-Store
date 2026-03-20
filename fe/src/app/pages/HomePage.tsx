@@ -1,58 +1,22 @@
 // src/app/pages/HomePage.tsx
-import {Banner} from '../components/Banner.tsx';
-import {ProductCard} from '../components/ProductCard.tsx';
-import {ServiceCard} from '../components/ServiceCard.tsx';
-import {Wrench, Shield, Cpu, Phone} from 'lucide-react';
+import { Banner } from '../components/Banner.tsx';
+import { ProductCard } from '../components/ProductCard.tsx';
+import { ServiceCard } from '../components/ServiceCard.tsx';
+import { Wrench, Shield, Cpu, Phone } from 'lucide-react';
 import { Mail } from 'lucide-react'; // Thêm icon Mail
 import { Input } from '../components/ui/input.tsx'; // Component Input của Shadcn
 import { Button } from '../components/ui/button.tsx'; // Component Button của Shadcn
+import { mockProducts } from '../data/products.ts';
+
+const formatVnd = (value: number) =>
+    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
 
 export default function HomePage() {
-    // Mock Data cho Products
-    const products = [
-        {
-            image: 'https://images.unsplash.com/photo-1640955014216-75201056c829?auto=format&fit=crop&q=80&w=500',
-            name: 'Laptop Gaming MSI Katana 15 - Intel Core i7 Gen 13',
-            price: '25.990.000đ',
-            oldPrice: '32.990.000đ',
-            rating: 4.8,
-            discount: '21%',
-            inStock: true
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1593640495253-23196b27a87f?auto=format&fit=crop&q=80&w=500',
-            name: 'PC Gaming TechStore Dragon - RTX 4060 Ti',
-            price: '18.590.000đ',
-            oldPrice: '22.000.000đ',
-            rating: 5.0,
-            discount: '15%',
-            inStock: true
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1587831990711-23ca6441447b?auto=format&fit=crop&q=80&w=500',
-            name: 'Màn hình ASUS TUF Gaming 27" IPS 165Hz',
-            price: '4.290.000đ',
-            oldPrice: '5.500.000đ',
-            rating: 4.7,
-            discount: '22%',
-            inStock: true
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?auto=format&fit=crop&q=80&w=500',
-            name: 'Bàn phím cơ Keychron K2 Pro - Hot Swap',
-            price: '2.190.000đ',
-            oldPrice: '2.500.000đ',
-            rating: 4.9,
-            discount: '12%',
-            inStock: false
-        }
-    ];
-
     const services = [
-        {icon: Wrench, title: 'Xây dựng cấu hình', desc: 'Tư vấn build PC tối ưu chi phí', color: '#0066b3'},
-        {icon: Shield, title: 'Bảo hành vàng', desc: 'Lỗi 1 đổi 1 trong 30 ngày', color: '#f37021'},
-        {icon: Cpu, title: 'Vệ sinh miễn phí', desc: 'Trọn đời cho PC mua tại shop', color: '#27ae60'},
-        {icon: Phone, title: 'Hỗ trợ 24/7', desc: 'Hotline kỹ thuật mọi lúc', color: '#e74c3c'},
+        { icon: Wrench, title: 'Xây dựng cấu hình', desc: 'Tư vấn build PC tối ưu chi phí', color: '#0066b3' },
+        { icon: Shield, title: 'Bảo hành vàng', desc: 'Lỗi 1 đổi 1 trong 30 ngày', color: '#f37021' },
+        { icon: Cpu, title: 'Vệ sinh miễn phí', desc: 'Trọn đời cho PC mua tại shop', color: '#27ae60' },
+        { icon: Phone, title: 'Hỗ trợ 24/7', desc: 'Hotline kỹ thuật mọi lúc', color: '#e74c3c' },
     ];
 
     return (
@@ -117,8 +81,18 @@ export default function HomePage() {
                         <a href="#" className="text-[#0066b3] hover:underline font-medium">Xem tất cả &rarr;</a>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {products.map((product, index) => (
-                            <ProductCard key={index} {...product} />
+                        {mockProducts.map((product) => (
+                            <ProductCard
+                                key={product.id}
+                                id={product.id}
+                                image={product.image}
+                                name={product.name}
+                                price={formatVnd(product.price)}
+                                oldPrice={product.oldPrice ? formatVnd(product.oldPrice) : undefined}
+                                rating={product.rating}
+                                discount={product.discount}
+                                inStock={product.inStock}
+                            />
                         ))}
                     </div>
                 </section>

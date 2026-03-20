@@ -9,6 +9,10 @@ import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import MyInstallmentsPage from './pages/MyInstallmentsPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import PaymentResultPage from './pages/PaymentResultPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
+import OrderFailPage from './pages/OrderFailPage';
 
 export default function App() {
     return (
@@ -24,10 +28,14 @@ export default function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/build-pc" element={<BuildPC />} />
+                    <Route path="/product/:id" element={<ProductDetailPage />} />
                     <Route path="/checkout" element={<CheckoutPage />} />
                     <Route path="/orders" element={<OrdersPage />} />
                     <Route path="/orders/:id" element={<OrderDetailPage />} />
                     <Route path="/my-installments" element={<MyInstallmentsPage />} />
+                    <Route path="/payment/result" element={<PaymentResultPage />} />
+                    <Route path="/order-success" element={<OrderSuccessPage />} />
+                    <Route path="/order-fail" element={<OrderFailPage />} />
                 </Routes>
             </main>
 

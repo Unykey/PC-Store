@@ -6,8 +6,10 @@ import com.sba301.code.be.dto.response.InstallmentResponse;
 import com.sba301.code.be.dto.response.OrderDetailResponse;
 import com.sba301.code.be.dto.response.OrderResponse;
 import com.sba301.code.be.model.entity.*;
+import com.sba301.code.be.model.enums.InstallmentProvider;
 import com.sba301.code.be.model.enums.InstallmentStatus;
 import com.sba301.code.be.model.enums.OrderStatus;
+import com.sba301.code.be.model.enums.PaymentTransactionStatus;
 import com.sba301.code.be.model.enums.PaymentType;
 import com.sba301.code.be.repository.*;
 import lombok.AllArgsConstructor;
@@ -31,6 +33,8 @@ public class OrderServiceImpl implements OrderService {
     private final AccountRepository accountRepository;
     private final ProductRepository productRepository;
     private final InstallmentRepository installmentRepository;
+    private final PaymentSettingsService paymentSettingsService;
+    private final PaymentTransactionRepository paymentTransactionRepository;
 
     private static final List<Integer> ALLOWED_INSTALLMENT_MONTHS = List.of(3, 6, 12, 24);
 
@@ -39,12 +43,16 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse placeOrder(OrderCreateRequest request) {
         // 1. Validate installment parameters early
         if (request.getPaymentType() == PaymentType.INSTALLMENT) {
-            if (request.getInstallmentMonths() == null || request.getInstallmentProvider() == null) {
+            if (request.getInstallmentMonths() == null) {
                 throw new IllegalArgumentException(
-                        "installmentMonths and installmentProvider are required for installment orders.");
+                        "installmentMonths is required for installment orders.");
             }
             if (!ALLOWED_INSTALLMENT_MONTHS.contains(request.getInstallmentMonths())) {
                 throw new IllegalArgumentException("installmentMonths must be one of: " + ALLOWED_INSTALLMENT_MONTHS);
+            }
+            if (request.getInstallmentProvider() != null
+                    && request.getInstallmentProvider() != InstallmentProvider.MOMO) {
+                throw new IllegalArgumentException("Only MOMO installment provider is supported in this project");
             }
         }
 
@@ -58,10 +66,12 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderDate(LocalDateTime.now());
         order.setOrderStatus(OrderStatus.PENDING);
         order.setPaymentType(request.getPaymentType() != null ? request.getPaymentType() : PaymentType.FULL_PAYMENT);
+        order.setShippingAddress(request.getShippingAddress());
+        order.setNote(request.getNote());
 
         if (order.getPaymentType() == PaymentType.INSTALLMENT) {
             order.setInstallmentMonths(request.getInstallmentMonths());
-            order.setInstallmentProvider(request.getInstallmentProvider());
+            order.setInstallmentProvider(InstallmentProvider.MOMO);
         }
 
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -110,17 +120,31 @@ public class OrderServiceImpl implements OrderService {
      */
     private void generateInstallmentSchedule(Order order) {
         int months = order.getInstallmentMonths();
-        BigDecimal monthlyAmount = order.getTotalAmount()
-                .divide(BigDecimal.valueOf(months), 0, RoundingMode.CEILING);
+        PaymentSettings settings = paymentSettingsService.getOrCreateSettings();
+        BigDecimal monthlyPrincipal = order.getTotalAmount()
+                .divide(BigDecimal.valueOf(months), 2, RoundingMode.HALF_UP);
+        BigDecimal monthlyInterest = order.getTotalAmount()
+                .multiply(settings.getMonthlyInstallmentRate())
+                .setScale(2, RoundingMode.HALF_UP);
 
         LocalDate startDate = order.getOrderDate().toLocalDate();
         List<Installment> schedule = new ArrayList<>();
+        BigDecimal distributedPrincipal = BigDecimal.ZERO;
 
         for (int month = 1; month <= months; month++) {
             Installment installment = new Installment();
             installment.setOrder(order);
             installment.setMonthNumber(month);
-            installment.setAmount(monthlyAmount);
+
+            BigDecimal principal = month == months
+                    ? order.getTotalAmount().subtract(distributedPrincipal)
+                    : monthlyPrincipal;
+            distributedPrincipal = distributedPrincipal.add(principal);
+
+            installment.setPrincipalAmount(principal);
+            installment.setInterestAmount(monthlyInterest);
+            installment.setOverdueFee(BigDecimal.ZERO);
+            installment.setAmount(principal.add(monthlyInterest));
             installment.setDueDate(startDate.plusMonths(month));
             installment.setInstallmentStatus(InstallmentStatus.PENDING);
             schedule.add(installment);
@@ -180,6 +204,37 @@ public class OrderServiceImpl implements OrderService {
         return mapToResponse(orderRepository.save(order));
     }
 
+    @Override
+    public OrderResponse confirmReceived(Long orderId, Long accountId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (!order.getAccount().getAccountId().equals(accountId)) {
+            throw new RuntimeException("Bạn không có quyền xác nhận đơn hàng này");
+        }
+
+        if (order.getOrderStatus() != OrderStatus.DELIVERED) {
+            throw new RuntimeException("Chỉ có thể xác nhận khi đơn hàng ở trạng thái DELIVERED");
+        }
+
+        if (!isOrderFullyPaid(order)) {
+            throw new RuntimeException("Đơn hàng chưa thanh toán đầy đủ, không thể hoàn tất");
+        }
+
+        order.setOrderStatus(OrderStatus.COMPLETED);
+        return mapToResponse(orderRepository.save(order));
+    }
+
+    private boolean isOrderFullyPaid(Order order) {
+        if (order.getPaymentType() == PaymentType.INSTALLMENT) {
+            return installmentRepository.countByOrder_OrderIdAndInstallmentStatusNot(
+                    order.getOrderId(), InstallmentStatus.PAID) == 0;
+        }
+
+        return paymentTransactionRepository.existsByOrder_OrderIdAndInstallmentIsNullAndStatus(
+                order.getOrderId(), PaymentTransactionStatus.SUCCESS);
+    }
+
     private OrderResponse mapToResponse(Order order) {
         OrderResponse response = new OrderResponse();
         response.setOrderId(order.getOrderId());
@@ -187,6 +242,8 @@ public class OrderServiceImpl implements OrderService {
         response.setOrderStatus(order.getOrderStatus());
         response.setTotalAmount(order.getTotalAmount());
         response.setPaymentType(order.getPaymentType());
+        response.setShippingAddress(order.getShippingAddress());
+        response.setNote(order.getNote());
 
         if (order.getAccount() != null) {
             response.setAccountId(order.getAccount().getAccountId());
@@ -225,6 +282,9 @@ public class OrderServiceImpl implements OrderService {
                             ir.setTotalMonths(order.getInstallmentMonths());
                             ir.setMonthNumber(i.getMonthNumber());
                             ir.setAmount(i.getAmount());
+                            ir.setPrincipalAmount(i.getPrincipalAmount());
+                            ir.setInterestAmount(i.getInterestAmount());
+                            ir.setOverdueFee(i.getOverdueFee());
                             ir.setDueDate(i.getDueDate());
                             ir.setPaidDate(i.getPaidDate());
                             ir.setInstallmentStatus(i.getInstallmentStatus());
