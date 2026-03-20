@@ -1,19 +1,29 @@
 package com.sba301.code.be.config;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sba301.code.be.model.entity.*;
+import com.sba301.code.be.model.entity.component.*;
 import com.sba301.code.be.model.enums.OrderStatus;
 import com.sba301.code.be.repository.*;
+import com.sba301.code.be.repository.component.*;
+import lombok.RequiredArgsConstructor;
 import net.datafaker.Faker;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 
 @Component
+@RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
     private final AccountRepository accountRepository;
@@ -22,22 +32,22 @@ public class DataSeeder implements CommandLineRunner {
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
 
+    // PC Components
+    private final CpuRepository cpuRepository;
+    private final GpuRepository gpuRepository;
+    private final MainboardRepository mainboardRepository;
+    private final RamRepository ramRepository;
+    private final PcCaseRepository pcCaseRepository;
+    private final PsuRepository psuRepository;
+    private final StorageRepository storageRepository;
+
+    // Jackson Mapper để đọc JSON
+//    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     private final Faker faker = new Faker();
     private final Random random = new Random();
     private final PasswordEncoder passwordEncoder;
-
-    public DataSeeder(AccountRepository accountRepository,
-                      RoleRepository roleRepository,
-                      CategoryRepository categoryRepository,
-                      ProductRepository productRepository,
-                      OrderRepository orderRepository, PasswordEncoder passwordEncoder) {
-        this.accountRepository = accountRepository;
-        this.roleRepository = roleRepository;
-        this.categoryRepository = categoryRepository;
-        this.productRepository = productRepository;
-        this.orderRepository = orderRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @Override
     @Transactional
@@ -56,13 +66,23 @@ public class DataSeeder implements CommandLineRunner {
         List<Account> accounts = seedAccounts(roles);
 
         // 3. Seed Categories
-        List<Category> categories = seedCategories();
+//        List<Category> categories = seedCategories();
+        seedCategories2();
+
+        // 3.1 Seed PC Components (CPU, GPU, Mainboard, etc)
+        seedCpus();
+        seedGpus();
+        seedMainboards();
+        seedRams();
+        seedPcCases();
+        seedPsus();
+        seedStrorages();
 
         // 4. Seed Products
-        List<Product> products = seedProducts(categories);
+//        List<Product> products = seedProducts(categories);
 
         // 5. Seed Orders (Đơn hàng & Chi tiết đơn hàng)
-        seedOrders(accounts, products);
+//        seedOrders(accounts, products);
 
         System.out.println("✅ Data Seeding Completed!");
     }
@@ -207,4 +227,173 @@ public class DataSeeder implements CommandLineRunner {
         // Save Order sẽ tự động Cascade save luôn OrderDetail (vì CascadeType.ALL)
         orderRepository.saveAll(orders);
     }
+
+    private void seedCategories2() {
+        if (categoryRepository.count() == 0) {
+            try {
+                // 1. Lấy luồng dữ liệu file JSON
+                InputStream inputStream = TypeReference.class.getResourceAsStream("/data/categories.json");
+
+                // 2. Bọc lại bằng Reader để ép chuẩn UTF-8 (Đảm bảo Tiếng Việt hiển thị đúng)
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                Category[] categoryArray = objectMapper.readValue(reader, Category[].class);
+                categoryRepository.saveAll(List.of(categoryArray));
+                System.out.println("✅ Seeded Categories successfully!");
+            } catch (IOException e) {
+                System.err.println("❌ Failed to seed Categories: " + e.getMessage());
+            }
+        }
+    }
+
+    private void seedCpus() {
+        if (cpuRepository.count() == 0) {
+            try {
+                InputStream inputStream = TypeReference.class.getResourceAsStream("/data/cpus.json");
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                Cpu[] cpuArray = objectMapper.readValue(reader, Cpu[].class);
+                List<Cpu> cpus = List.of(cpuArray);
+
+                // Lấy Category CPU từ DB để gán vào
+                Category cpuCategory = categoryRepository.findByName("CPU")
+                        .orElseThrow(() -> new RuntimeException("Category CPU not found"));
+
+                // Gán category cho từng sản phẩm
+                cpus.forEach(cpu -> cpu.setCategory(cpuCategory));
+
+                // Lưu vào DB
+                cpuRepository.saveAll(cpus);
+                System.out.println("✅ Seeded CPUs successfully!");
+            } catch (IOException e) {
+                System.err.println("❌ Failed to seed CPUs: " + e.getMessage());
+            }
+        }
+    }
+
+    private void seedGpus() {
+        if (gpuRepository.count() == 0) {
+            try {
+                InputStream inputStream = TypeReference.class.getResourceAsStream("/data/gpus.json");
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                Gpu[] gpuArray = objectMapper.readValue(reader, Gpu[].class);
+                List<Gpu> gpus = List.of(gpuArray);
+
+                Category gpuCategory = categoryRepository.findByName("VGA")
+                        .orElseThrow(() -> new RuntimeException("Category VGA not found"));
+
+                gpus.forEach(gpu -> gpu.setCategory(gpuCategory));
+
+                gpuRepository.saveAll(gpus);
+                System.out.println("✅ Seeded GPUs successfully!");
+            } catch (IOException e) {
+                System.err.println("❌ Failed to seed GPUs: " + e.getMessage());
+            }
+        }
+    }
+
+    private void seedMainboards() {
+        if (mainboardRepository.count() == 0) {
+            try {
+                InputStream inputStream = TypeReference.class.getResourceAsStream("/data/mainboards.json");
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                Mainboard[] mainboardArray = objectMapper.readValue(reader, Mainboard[].class);
+                List<Mainboard> mainboards = List.of(mainboardArray);
+
+                Category mainboCategory = categoryRepository.findByName("Mainboard")
+                        .orElseThrow(() -> new RuntimeException("Category Mainboard not found"));
+
+                mainboards.forEach(mainboard -> mainboard.setCategory(mainboCategory));
+
+                mainboardRepository.saveAll(mainboards);
+                System.out.println("✅ Seeded Mainboards successfully!");
+            } catch (IOException e) {
+                System.err.println("❌ Failed to seed Mainboards: " + e.getMessage());
+            }
+        }
+    }
+
+    private void seedRams() {
+        if (ramRepository.count() == 0) {
+            try {
+                InputStream inputStream = TypeReference.class.getResourceAsStream("/data/rams.json");
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                Ram[] ramArray = objectMapper.readValue(reader, Ram[].class);
+                List<Ram> rams = List.of(ramArray);
+
+                Category ramCategory = categoryRepository.findByName("RAM")
+                        .orElseThrow(() -> new RuntimeException("Category RAM not found"));
+
+                rams.forEach(ram -> ram.setCategory(ramCategory));
+
+                ramRepository.saveAll(rams);
+                System.out.println("✅ Seeded RAMs successfully!");
+            } catch (IOException e) {
+                System.err.println("❌ Failed to seed RAMs: " + e.getMessage());
+            }
+        }
+    }
+
+    private void seedPcCases() {
+        if (pcCaseRepository.count() == 0) {
+            try {
+                InputStream inputStream = TypeReference.class.getResourceAsStream("/data/cases.json");
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                PcCase[] pcCaseArray = objectMapper.readValue(reader, PcCase[].class);
+                List<PcCase> pcCases = List.of(pcCaseArray);
+
+                Category caseCategory = categoryRepository.findByName("Case")
+                        .orElseThrow(() -> new RuntimeException("Category Case not found"));
+
+                pcCases.forEach(pcCase -> pcCase.setCategory(caseCategory));
+
+                pcCaseRepository.saveAll(pcCases);
+                System.out.println("✅ Seeded PC Cases successfully!");
+            } catch (IOException e) {
+                System.err.println("❌ Failed to seed PC Cases: " + e.getMessage());
+            }
+        }
+    }
+
+    private void seedPsus() {
+        if (psuRepository.count() == 0) {
+            try {
+                InputStream inputStream = TypeReference.class.getResourceAsStream("/data/psus.json");
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                Psu[] psuArray = objectMapper.readValue(reader, Psu[].class);
+                List<Psu> psus = List.of(psuArray);
+
+                Category psuCategory = categoryRepository.findByName("PSU")
+                        .orElseThrow(() -> new RuntimeException("Category PSU not found"));
+
+                psus.forEach(psu -> psu.setCategory(psuCategory));
+
+                psuRepository.saveAll(psus);
+                System.out.println("✅ Seeded PSUs successfully!");
+            } catch (IOException e) {
+                System.err.println("❌ Failed to seed PSUs: " + e.getMessage());
+            }
+        }
+    }
+
+    private void seedStrorages() {
+        if (storageRepository.count() == 0) {
+            try {
+                InputStream inputStream = TypeReference.class.getResourceAsStream("/data/storages.json");
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                Storage[] storageArray = objectMapper.readValue(reader, Storage[].class);
+                List<Storage> storages = List.of(storageArray);
+
+                Category storageCategory = categoryRepository.findByName("SSD")
+                        .orElseThrow(() -> new RuntimeException("Category SSD not found"));
+
+                storages.forEach(storage -> storage.setCategory(storageCategory));
+
+                storageRepository.saveAll(storages);
+                System.out.println("✅ Seeded Storages successfully!");
+            } catch (IOException e) {
+                System.err.println("❌ Failed to seed Storages: " + e.getMessage());
+            }
+        }
+    }
+
+
 }

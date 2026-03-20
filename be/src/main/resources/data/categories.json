@@ -1,0 +1,9 @@
+[
+  { "name": "CPU", "description": "Bộ vi xử lý trung tâm" },
+  { "name": "Mainboard", "description": "Bo mạch chủ" },
+  { "name": "RAM", "description": "Bộ nhớ trong" },
+  { "name": "VGA", "description": "Card màn hình" },
+  { "name": "SSD", "description": "Ổ cứng thể rắn" },
+  { "name": "PSU", "description": "Nguồn máy tính" },
+  { "name": "Case", "description": "Vỏ máy tính" }
+]

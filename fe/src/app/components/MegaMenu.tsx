@@ -52,7 +52,7 @@ export function MegaMenu() {
           items: ['ASUS', 'Cooler Master', 'Golden Field', 'CORSAIR', 'Gigabyte', 'AcBel', 'MSI', 'SEGOTER', 'XIGMATEK', 'ANTEC', 'DEEPCOOL', 'MIK SPOWER']
         },
         {
-          name: 'VGA - Card màn hình',
+          name: 'Gpu - Card màn hình',
           items: ['RTX 5000 series', 'RTX 5090', 'RTX 5080', 'RTX 5070', 'RTX 5070 Ti', 'RTX 5060', 'RTX 5060 Ti', 'RTX 5050', 'RTX 4060', 'RTX 3060']
         },
         {
