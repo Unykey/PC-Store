@@ -110,6 +110,15 @@ public class ProductServiceImpl implements ProductService {
         return new ProductPageResponse(items, total);
     }
 
+    @Override
+    public List<ProductResponse> getLowStockProducts() {
+        // Define low stock threshold as less than 5
+        int threshold = 4;
+        return productRepository.findByStockQuantityLessThanEqual(threshold).stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
     private ProductResponse toResponse(Product product) {
         ProductResponse res = new ProductResponse();
         res.setProductId(product.getProductId());
