@@ -19,7 +19,8 @@ export function Header(_: HeaderProps) {
         { name: 'Build PC', path: '/build-pc' },
         { name: 'Thanh toán', path: '/checkout' },
         { name: 'Đơn hàng', path: '/orders' },
-        { name: 'Lịch trả góp', path: '/my-installments' }
+        { name: 'Lịch trả góp', path: '/my-installments' },
+        { name: 'Admin', path: '/admin' }, // added admin quick link
     ];
 
     return (

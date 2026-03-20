@@ -3,15 +3,20 @@ package com.sba301.code.be.service;
 
 import com.sba301.code.be.dto.request.ProductRequest;
 import com.sba301.code.be.dto.response.ProductResponse;
+import com.sba301.code.be.dto.response.ProductPageResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 public interface ProductService {
-    public List<ProductResponse> getAllProducts();
-    public ProductResponse getProductById(Long productId);
-    public ProductResponse createProduct(ProductRequest productRequest);
-    public ProductResponse updateProduct(Long productId, ProductRequest productRequest);
-    public void deleteProduct(Long productId);
+    List<ProductResponse> getAllProducts();
+    ProductResponse getProductById(Long productId);
+    ProductResponse createProduct(ProductRequest productRequest);
+    ProductResponse updateProduct(Long productId, ProductRequest productRequest);
+    void deleteProduct(Long productId);
+
+    // New: filtered and paginated product listing for admin
+    ProductPageResponse getProducts(String search, Long categoryId, Integer minStock, Integer maxStock,
+                                      int page, int size, String sort);
 }
