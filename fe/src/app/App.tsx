@@ -9,6 +9,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import MyInstallmentsPage from './pages/MyInstallmentsPage';
+import { ComparisonPage } from './pages/ComparisonPage';
 
 export default function App() {
     return (
@@ -20,6 +21,10 @@ export default function App() {
             {/* Thêm pt-20 hoặc pt-28 tùy độ cao header để tránh nội dung bị che */}
             <main className="flex-1 pt-[80px]">
                 <Routes>
+                    <Route path="/" element={<HomePage/>}/>
+                    <Route path="/login" element={<LoginPage/>} />
+                    <Route path="/register" element={<RegisterPage/>} />
+                    <Route path="/build-pc" element={<BuildPC/>}/>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
@@ -28,6 +33,7 @@ export default function App() {
                     <Route path="/orders" element={<OrdersPage />} />
                     <Route path="/orders/:id" element={<OrderDetailPage />} />
                     <Route path="/my-installments" element={<MyInstallmentsPage />} />
+                    <Route path="/comparison" element={<ComparisonPage />} />
                 </Routes>
             </main>
 
