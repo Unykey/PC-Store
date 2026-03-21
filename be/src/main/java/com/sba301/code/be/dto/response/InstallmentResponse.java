@@ -19,6 +19,9 @@ public class InstallmentResponse {
     private int totalMonths;
     private int monthNumber;
     private BigDecimal amount;
+    private BigDecimal principalAmount;
+    private BigDecimal interestAmount;
+    private BigDecimal overdueFee;
     private LocalDate dueDate;
     private LocalDate paidDate;
     private InstallmentStatus installmentStatus;

@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer'; // Import Footer mới
 import HomePage from './pages/HomePage'; // Import HomePage mới
@@ -9,41 +9,37 @@ import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
 import MyInstallmentsPage from './pages/MyInstallmentsPage';
-import { AdminDashboard } from './components/AdminDashboard'; // added admin import
-import { ComparisonPage } from './pages/ComparisonPage';
+import ProductDetailPage from './pages/ProductDetailPage';
+import PaymentResultPage from './pages/PaymentResultPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
+import OrderFailPage from './pages/OrderFailPage';
 
 export default function App() {
-    const location = useLocation();
-    const isAdminRoute = location.pathname.startsWith('/admin');
-
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            {/* Header: hide on admin routes */}
-            {!isAdminRoute && <Header />}
+            {/* 1. Header luôn cố định ở trên */}
+            <Header />
 
-            {/* Main content; remove top padding when header hidden */}
-            <main className={`flex-1 ${isAdminRoute ? '' : 'pt-[80px]'}`}>
+            {/* 2. Phần nội dung chính sẽ thay đổi tùy theo URL */}
+            {/* Thêm pt-20 hoặc pt-28 tùy độ cao header để tránh nội dung bị che */}
+            <main className="flex-1 pt-[80px]">
                 <Routes>
-                    <Route path="/" element={<HomePage/>}/>
-                    <Route path="/login" element={<LoginPage/>} />
-                    <Route path="/register" element={<RegisterPage/>} />
-                    <Route path="/build-pc" element={<BuildPC/>}/>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/build-pc" element={<BuildPC />} />
+                    <Route path="/product/:id" element={<ProductDetailPage />} />
                     <Route path="/checkout" element={<CheckoutPage />} />
                     <Route path="/orders" element={<OrdersPage />} />
                     <Route path="/orders/:id" element={<OrderDetailPage />} />
                     <Route path="/my-installments" element={<MyInstallmentsPage />} />
-
-                    {/* Admin route - no auth for now */}
-                    <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="/comparison" element={<ComparisonPage />} />
+                    <Route path="/payment/result" element={<PaymentResultPage />} />
+                    <Route path="/order-success" element={<OrderSuccessPage />} />
+                    <Route path="/order-fail" element={<OrderFailPage />} />
                 </Routes>
             </main>
 
-            {/* Footer always shown */}
+            {/* 3. Footer luôn cố định ở dưới */}
             <Footer />
         </div>
     );

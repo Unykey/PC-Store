@@ -9,7 +9,6 @@ import com.sba301.code.be.security.CustomUserDetails;
 import com.sba301.code.be.service.OrderService;
 import lombok.AllArgsConstructor; // Import Lombok
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +21,10 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-        public ResponseEntity<ApiResponse<OrderResponse>> createOrder(@RequestBody OrderCreateRequest request) {
+    public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
+            @RequestBody OrderCreateRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        request.setAccountId(currentUser.getAccountId());
         OrderResponse newOrder = orderService.placeOrder(request);
         return ResponseEntity.ok(ApiResponse.success(newOrder, "Order placed successfully"));
     }
@@ -34,7 +36,8 @@ public class OrderController {
     }
 
     @GetMapping("/my-orders")
-    public ResponseEntity<ApiResponse<List<OrderResponse>>> getMyOrders(@AuthenticationPrincipal CustomUserDetails currentUser) {
+    public ResponseEntity<ApiResponse<List<OrderResponse>>> getMyOrders(
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
         List<OrderResponse> orders = orderService.getOrdersByAccountId(currentUser.getAccountId());
         return ResponseEntity.ok(ApiResponse.success(orders, "Get my orders successfully"));
     }
@@ -52,14 +55,24 @@ public class OrderController {
             @PathVariable Long id,
             @AuthenticationPrincipal CustomUserDetails currentUser) {
 
-        // Logic service: Only allow cancelation if status == PENDING and belongs to the correct owner
+        // Logic service: Only allow cancelation if status == PENDING and belongs to the
+        // correct owner
         OrderResponse cancelledOrder = orderService.cancelOrder(id, currentUser.getAccountId());
         return ResponseEntity.ok(ApiResponse.success(cancelledOrder, "Order canceled successfully"));
     }
 
     @PutMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<OrderResponse>> updateStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
+    public ResponseEntity<ApiResponse<OrderResponse>> updateStatus(@PathVariable Long id,
+            @RequestParam OrderStatus status) {
         OrderResponse updatedOrder = orderService.updateOrderStatus(id, status);
         return ResponseEntity.ok(ApiResponse.success(updatedOrder, "Update status successfully"));
+    }
+
+    @PutMapping("/{id}/confirm-received")
+    public ResponseEntity<ApiResponse<OrderResponse>> confirmReceived(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        OrderResponse updatedOrder = orderService.confirmReceived(id, currentUser.getAccountId());
+        return ResponseEntity.ok(ApiResponse.success(updatedOrder, "Order marked as completed"));
     }
 }

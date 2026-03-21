@@ -64,16 +64,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/payments/momo/ipn",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
-                                "/error"
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                                "/error")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(authenticationEntryPoint) // 401
-                        .accessDeniedHandler(accessDeniedHandler)           // 403
+                        .accessDeniedHandler(accessDeniedHandler) // 403
                 );
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

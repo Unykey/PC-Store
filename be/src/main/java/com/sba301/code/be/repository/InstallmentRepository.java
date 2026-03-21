@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -17,4 +18,8 @@ public interface InstallmentRepository extends JpaRepository<Installment, Long> 
 
     /** For overdue detection: installments still PENDING but past due date */
     List<Installment> findByInstallmentStatusAndDueDateBefore(InstallmentStatus status, LocalDate date);
+
+    List<Installment> findByInstallmentStatusInAndDueDateBefore(Collection<InstallmentStatus> statuses, LocalDate date);
+
+    long countByOrder_OrderIdAndInstallmentStatusNot(Long orderId, InstallmentStatus status);
 }

@@ -11,9 +11,16 @@ import java.util.List;
 @Service
 public interface OrderService {
     List<OrderResponse> getAllOrders();
+
     OrderResponse getOrderById(Long orderId);
+
     List<OrderResponse> getOrdersByAccountId(Long accountId);
+
     OrderResponse placeOrder(OrderCreateRequest request);
+
     OrderResponse updateOrderStatus(Long orderId, OrderStatus status);
+
     OrderResponse cancelOrder(Long orderId, Long accountId);
+
+    OrderResponse confirmReceived(Long orderId, Long accountId);
 }

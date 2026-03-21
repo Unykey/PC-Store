@@ -21,6 +21,8 @@ public class OrderResponse {
     private BigDecimal totalAmount;
     private Long accountId;
     private String accountName;
+    private String shippingAddress;
+    private String note;
     private List<OrderDetailResponse> orderDetails;
 
     // Installment summary (populated only when paymentType = INSTALLMENT)

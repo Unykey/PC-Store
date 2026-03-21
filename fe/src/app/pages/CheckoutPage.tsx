@@ -1,55 +1,110 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { orderApi, type InstallmentProvider, type OrderCreateRequest, type OrderItemRequest, type PaymentType } from "@/api/orderApi";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+    orderApi,
+    paymentApi,
+    productApi,
+    type OrderCreateRequest,
+    type OrderItemRequest,
+    type PaymentType,
+} from "@/api/orderApi";
 
-const INSTALLMENT_OPTIONS: Array<{ label: string; value: InstallmentProvider }> = [
-    { label: "Home Credit", value: "HOME_CREDIT" },
-    { label: "FE Credit", value: "FE_CREDIT" },
-    { label: "Mcredit (MB Bank)", value: "MCREDIT" },
-    { label: "HD Saison", value: "HD_SAISON" },
-    { label: "Thẻ tín dụng ngân hàng", value: "CREDIT_CARD" },
-];
+const MONTH_OPTIONS = [3, 6, 12] as const;
 
-const MONTH_OPTIONS = [3, 6, 12, 24] as const;
+type CheckoutMethod = "CASH" | "MOMO_WALLET" | "MOMO_INSTALLMENT";
 
 const formatVnd = (value: number) =>
-    new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(value);
-
-const getAccountIdFromStorage = () => {
-    const raw = localStorage.getItem("accountId");
-    if (!raw) return "";
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) && parsed > 0 ? String(parsed) : "";
-};
+    new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0,
+    }).format(value);
 
 export default function CheckoutPage() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const prefillProductId = Number(searchParams.get("productId") || "1");
+    const prefillQuantity = Number(searchParams.get("quantity") || "1");
 
-    const [accountId, setAccountId] = useState<string>(getAccountIdFromStorage());
     const [shippingAddress, setShippingAddress] = useState("HCM City");
     const [note, setNote] = useState("");
-    const [estimatedTotal, setEstimatedTotal] = useState<number>(15000000);
-    const [paymentType, setPaymentType] = useState<PaymentType>("FULL_PAYMENT");
-    const [installmentMonths, setInstallmentMonths] = useState<(typeof MONTH_OPTIONS)[number]>(12);
-    const [installmentProvider, setInstallmentProvider] = useState<InstallmentProvider>("HOME_CREDIT");
-    const [items, setItems] = useState<OrderItemRequest[]>([{ productId: 1, quantity: 1 }]);
+    const [checkoutMethod, setCheckoutMethod] = useState<CheckoutMethod>("MOMO_WALLET");
+    const [installmentMonths, setInstallmentMonths] = useState<(typeof MONTH_OPTIONS)[number]>(6);
+    const [items, setItems] = useState<OrderItemRequest[]>([
+        {
+            productId: Number.isFinite(prefillProductId) && prefillProductId > 0 ? prefillProductId : 1,
+            quantity: Number.isFinite(prefillQuantity) && prefillQuantity > 0 ? prefillQuantity : 1,
+        },
+    ]);
 
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [priceMap, setPriceMap] = useState<Record<number, number>>({});
+    const [priceLoading, setPriceLoading] = useState(false);
+
+    const paymentType: PaymentType = checkoutMethod === "MOMO_INSTALLMENT" ? "INSTALLMENT" : "FULL_PAYMENT";
+
+    useEffect(() => {
+        const uniqueProductIds = Array.from(
+            new Set(
+                items
+                    .map((item) => item.productId)
+                    .filter((id) => Number.isFinite(id) && id > 0)
+            )
+        );
+
+        if (uniqueProductIds.length === 0) {
+            setPriceMap({});
+            return;
+        }
+
+        let active = true;
+        const fetchPrices = async () => {
+            setPriceLoading(true);
+            try {
+                const entries = await Promise.all(
+                    uniqueProductIds.map(async (id) => {
+                        const res = await productApi.getProductById(id);
+                        return [id, Number(res.data.price) || 0] as const;
+                    })
+                );
+                if (!active) return;
+                setPriceMap(Object.fromEntries(entries));
+            } catch {
+                if (!active) return;
+                setPriceMap({});
+            } finally {
+                if (active) {
+                    setPriceLoading(false);
+                }
+            }
+        };
+
+        fetchPrices();
+        return () => {
+            active = false;
+        };
+    }, [items]);
+
+    const actualTotal = useMemo(() => {
+        return items.reduce((sum, item) => {
+            const price = priceMap[item.productId] || 0;
+            const quantity = Number.isFinite(item.quantity) && item.quantity > 0 ? item.quantity : 0;
+            return sum + price * quantity;
+        }, 0);
+    }, [items, priceMap]);
 
     const monthlyPreview = useMemo(() => {
-        if (paymentType !== "INSTALLMENT") return 0;
-        return Math.ceil(estimatedTotal / installmentMonths);
-    }, [estimatedTotal, installmentMonths, paymentType]);
+        if (checkoutMethod !== "MOMO_INSTALLMENT") return 0;
+        return Math.ceil(actualTotal / installmentMonths);
+    }, [actualTotal, installmentMonths, checkoutMethod]);
 
     const canSubmit = useMemo(() => {
-        const parsedAccountId = Number(accountId);
-        if (!Number.isFinite(parsedAccountId) || parsedAccountId <= 0) return false;
         if (items.length === 0) return false;
         if (items.some((item) => item.productId <= 0 || item.quantity <= 0)) return false;
-        if (paymentType === "INSTALLMENT" && (!installmentMonths || !installmentProvider)) return false;
+        if (checkoutMethod === "MOMO_INSTALLMENT" && !installmentMonths) return false;
         return true;
-    }, [accountId, items, paymentType, installmentMonths, installmentProvider]);
+    }, [items, checkoutMethod, installmentMonths]);
 
     const updateItem = (index: number, key: keyof OrderItemRequest, value: number) => {
         setItems((prev) => prev.map((it, i) => (i === index ? { ...it, [key]: value } : it)));
@@ -58,6 +113,12 @@ export default function CheckoutPage() {
     const addItem = () => setItems((prev) => [...prev, { productId: 1, quantity: 1 }]);
     const removeItem = (index: number) => setItems((prev) => prev.filter((_, i) => i !== index));
 
+    const getActionText = () => {
+        if (checkoutMethod === "CASH") return "Đặt hàng";
+        if (checkoutMethod === "MOMO_INSTALLMENT") return "Thanh toán MoMo (Sandbox)";
+        return "Thanh toán ngay";
+    };
+
     const handleSubmit = async () => {
         if (!canSubmit || submitting) return;
         setSubmitting(true);
@@ -65,24 +126,69 @@ export default function CheckoutPage() {
 
         try {
             const payload: OrderCreateRequest = {
-                accountId: Number(accountId),
                 shippingAddress,
                 note,
                 items,
                 paymentType,
             };
 
-            if (paymentType === "INSTALLMENT") {
+            if (checkoutMethod === "MOMO_INSTALLMENT") {
                 payload.installmentMonths = installmentMonths;
-                payload.installmentProvider = installmentProvider;
+                payload.installmentProvider = "MOMO";
             }
 
-            const res = await orderApi.createOrder(payload);
-            const order = res.data.data;
-            navigate(`/orders/${order.orderId}`);
+            const orderRes = await orderApi.createOrder(payload);
+            const order = orderRes.data.data;
+
+            if (checkoutMethod === "CASH") {
+                await paymentApi.payWithCash({
+                    orderId: order.orderId,
+                    note: "Mock COD demo",
+                });
+
+                navigate(`/order-success?orderId=${order.orderId}&method=${encodeURIComponent("Tien mat")}`);
+                return;
+            }
+
+            let installmentId: number | undefined;
+            if (checkoutMethod === "MOMO_INSTALLMENT") {
+                const firstPendingInstallment = order.installments?.find(
+                    (installment) => installment.installmentStatus === "PENDING"
+                );
+                installmentId = firstPendingInstallment?.id;
+                if (!installmentId) {
+                    throw new Error("Không tìm thấy kỳ trả góp để thanh toán. Vui lòng thử lại.");
+                }
+            }
+
+            const momoRes = await paymentApi.createMomoPayment({
+                orderId: order.orderId,
+                installmentId,
+                orderInfo:
+                    checkoutMethod === "MOMO_INSTALLMENT"
+                        ? `Tra gop MoMo don #${order.orderId}`
+                        : `Thanh toan MoMo don #${order.orderId}`,
+            });
+
+            localStorage.setItem(
+                "pendingPayment",
+                JSON.stringify({
+                    orderId: order.orderId,
+                    method: checkoutMethod === "MOMO_INSTALLMENT" ? "MOMO_INSTALLMENT" : "MOMO",
+                    installmentMonths: checkoutMethod === "MOMO_INSTALLMENT" ? installmentMonths : undefined,
+                    installmentId,
+                })
+            );
+
+            const payUrl = momoRes.data.data?.payUrl;
+            if (!payUrl) {
+                navigate(`/order-fail?orderId=${order.orderId}`);
+                return;
+            }
+
+            window.location.href = payUrl;
         } catch (e: any) {
-            setError(e?.response?.data?.message || "Không thể tạo đơn hàng. Vui lòng kiểm tra dữ liệu và thử lại.");
-        } finally {
+            setError(e?.response?.data?.message || "Không thể xử lý thanh toán. Vui lòng thử lại.");
             setSubmitting(false);
         }
     };
@@ -91,32 +197,18 @@ export default function CheckoutPage() {
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="mx-auto max-w-4xl px-4">
                 <h1 className="mb-2 text-3xl font-bold text-[#0066b3]">Thanh Toán</h1>
-                <p className="mb-6 text-sm text-gray-600">Tạo đơn hàng mới và chọn thanh toán toàn bộ hoặc trả góp.</p>
+                <p className="mb-6 text-sm text-gray-600">Chọn phương thức phù hợp và hoàn tất đơn hàng nhanh chóng.</p>
 
                 <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <label className="text-sm">
-                            <span className="mb-1 block font-medium text-gray-700">Account ID</span>
-                            <input
-                                value={accountId}
-                                onChange={(e) => setAccountId(e.target.value)}
-                                type="number"
-                                min={1}
-                                className="w-full rounded-md border border-gray-300 px-3 py-2"
-                                placeholder="Nhập accountId"
-                            />
-                        </label>
-
-                        <label className="text-sm">
-                            <span className="mb-1 block font-medium text-gray-700">Địa chỉ giao hàng</span>
-                            <input
-                                value={shippingAddress}
-                                onChange={(e) => setShippingAddress(e.target.value)}
-                                className="w-full rounded-md border border-gray-300 px-3 py-2"
-                                placeholder="Số nhà, đường, quận..."
-                            />
-                        </label>
-                    </div>
+                    <label className="text-sm">
+                        <span className="mb-1 block font-medium text-gray-700">Địa chỉ giao hàng</span>
+                        <input
+                            value={shippingAddress}
+                            onChange={(e) => setShippingAddress(e.target.value)}
+                            className="w-full rounded-md border border-gray-300 px-3 py-2"
+                            placeholder="Số nhà, đường, quận..."
+                        />
+                    </label>
 
                     <label className="mt-4 block text-sm">
                         <span className="mb-1 block font-medium text-gray-700">Ghi chú</span>
@@ -132,7 +224,11 @@ export default function CheckoutPage() {
                     <div className="mt-6 rounded-lg border border-gray-200 p-4">
                         <div className="mb-3 flex items-center justify-between">
                             <h2 className="font-semibold text-gray-800">Sản phẩm trong đơn</h2>
-                            <button onClick={addItem} type="button" className="rounded-md bg-[#0066b3] px-3 py-1.5 text-sm text-white hover:bg-[#005091]">
+                            <button
+                                onClick={addItem}
+                                type="button"
+                                className="rounded-md bg-[#0066b3] px-3 py-1.5 text-sm text-white hover:bg-[#005091]"
+                            >
                                 + Thêm dòng
                             </button>
                         </div>
@@ -169,86 +265,85 @@ export default function CheckoutPage() {
                         </div>
                     </div>
 
-                    <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <h2 className="mb-3 font-semibold text-gray-800">Phương thức thanh toán</h2>
+                    <div className="mt-6 grid gap-4 md:grid-cols-2">
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <h2 className="mb-3 font-semibold text-gray-800">A. Chọn phương thức</h2>
 
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                            <label className="mb-2 flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
                                 <input
                                     type="radio"
-                                    checked={paymentType === "FULL_PAYMENT"}
-                                    onChange={() => setPaymentType("FULL_PAYMENT")}
+                                    checked={checkoutMethod === "CASH"}
+                                    onChange={() => setCheckoutMethod("CASH")}
                                 />
                                 <div>
-                                    <div className="font-medium">Thanh toán toàn bộ</div>
-                                    <div className="text-xs text-gray-500">Thanh toán ngay 100%</div>
+                                    <div className="font-medium">Thanh toán tiền mặt khi nhận hàng</div>
                                 </div>
                             </label>
 
-                            <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                            <label className="mb-2 flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
                                 <input
                                     type="radio"
-                                    checked={paymentType === "INSTALLMENT"}
-                                    onChange={() => setPaymentType("INSTALLMENT")}
+                                    checked={checkoutMethod === "MOMO_WALLET"}
+                                    onChange={() => setCheckoutMethod("MOMO_WALLET")}
                                 />
                                 <div>
-                                    <div className="font-medium">Trả góp</div>
-                                    <div className="text-xs text-gray-500">Chia nhỏ thanh toán theo tháng</div>
+                                    <div className="font-medium">Thanh toán qua ví MoMo</div>
                                 </div>
                             </label>
+
+                            <label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-[#f37021]/40 bg-[#fff7f2] p-3">
+                                <input
+                                    type="radio"
+                                    checked={checkoutMethod === "MOMO_INSTALLMENT"}
+                                    onChange={() => setCheckoutMethod("MOMO_INSTALLMENT")}
+                                />
+                                <div>
+                                    <div className="font-medium text-[#d45f1a]">Mua trả góp</div>
+                                </div>
+                            </label>
+
+                            {checkoutMethod === "MOMO_INSTALLMENT" && (
+                                <div className="mt-3 rounded-md border border-[#f37021]/20 bg-white p-3">
+                                    <span className="mb-2 block text-sm font-medium text-gray-700">Chọn kỳ hạn</span>
+                                    <div className="flex gap-2">
+                                        {MONTH_OPTIONS.map((month) => (
+                                            <button
+                                                key={month}
+                                                type="button"
+                                                onClick={() => setInstallmentMonths(month)}
+                                                className={`rounded-md px-3 py-1.5 text-sm ${installmentMonths === month
+                                                    ? "bg-[#0066b3] text-white"
+                                                    : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                                                    }`}
+                                            >
+                                                {month} tháng
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {paymentType === "INSTALLMENT" && (
-                            <div className="mt-4 grid gap-4 md:grid-cols-2">
-                                <label className="text-sm">
-                                    <span className="mb-1 block font-medium text-gray-700">Số tháng</span>
-                                    <select
-                                        value={installmentMonths}
-                                        onChange={(e) => setInstallmentMonths(Number(e.target.value) as (typeof MONTH_OPTIONS)[number])}
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2"
-                                    >
-                                        {MONTH_OPTIONS.map((month) => (
-                                            <option key={month} value={month}>
-                                                {month} tháng
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <h2 className="mb-3 font-semibold text-gray-800">B. Tóm tắt</h2>
 
-                                <label className="text-sm">
-                                    <span className="mb-1 block font-medium text-gray-700">Đơn vị tài chính</span>
-                                    <select
-                                        value={installmentProvider}
-                                        onChange={(e) => setInstallmentProvider(e.target.value as InstallmentProvider)}
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2"
-                                    >
-                                        {INSTALLMENT_OPTIONS.map((provider) => (
-                                            <option key={provider.value} value={provider.value}>
-                                                {provider.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
-
-                                <label className="text-sm md:col-span-2">
-                                    <span className="mb-1 block font-medium text-gray-700">Tổng tiền tạm tính (để preview trả góp)</span>
-                                    <input
-                                        type="number"
-                                        min={0}
-                                        value={estimatedTotal}
-                                        onChange={(e) => setEstimatedTotal(Number(e.target.value) || 0)}
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2"
-                                    />
-                                </label>
-
-                                <div className="md:col-span-2 rounded-lg border border-[#0066b3]/20 bg-[#0066b3]/5 p-3 text-sm">
-                                    Mỗi tháng thanh toán: <span className="font-semibold text-[#0066b3]">~{formatVnd(monthlyPreview)}</span>
-                                </div>
+                            <div className="space-y-2 text-sm">
+                                <p>
+                                    Tổng tiền tạm tính: <span className="font-semibold text-[#f37021]">{formatVnd(actualTotal)}</span>
+                                </p>
+                                {priceLoading && <p className="text-xs text-gray-500">Đang cập nhật giá sản phẩm...</p>}
+                                {checkoutMethod === "MOMO_INSTALLMENT" && (
+                                    <p className="rounded-md bg-[#0066b3]/5 px-2 py-1">
+                                        Số tiền cần thanh toán mỗi tháng: <span className="font-semibold text-[#0066b3]">{formatVnd(monthlyPreview)}</span>
+                                    </p>
+                                )}
                             </div>
-                        )}
+                        </div>
                     </div>
 
-                    {error && <p className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</p>}
+                    {error && (
+                        <p className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</p>
+                    )}
 
                     <div className="mt-6 flex flex-wrap gap-3">
                         <button
@@ -257,7 +352,7 @@ export default function CheckoutPage() {
                             disabled={!canSubmit || submitting}
                             className="rounded-md bg-[#f37021] px-5 py-2.5 font-medium text-white hover:bg-[#d45f1a] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            {submitting ? "Đang tạo đơn..." : "Tạo đơn hàng"}
+                            {submitting ? "Đang xử lý..." : getActionText()}
                         </button>
                         <button
                             type="button"

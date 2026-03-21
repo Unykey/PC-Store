@@ -35,6 +35,18 @@ public class Installment {
     @Column(nullable = false)
     private BigDecimal amount;
 
+    /** Principal amount for this installment (without interest/penalty) */
+    @Column(nullable = false)
+    private BigDecimal principalAmount = BigDecimal.ZERO;
+
+    /** Flat interest amount configured by admin at schedule creation time */
+    @Column(nullable = false)
+    private BigDecimal interestAmount = BigDecimal.ZERO;
+
+    /** Overdue fee added when installment becomes overdue */
+    @Column(nullable = false)
+    private BigDecimal overdueFee = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private InstallmentStatus installmentStatus = InstallmentStatus.PENDING;

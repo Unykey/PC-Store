@@ -2,16 +2,11 @@ import axiosClient from "./axiosClient";
 
 export type PaymentType = "FULL_PAYMENT" | "INSTALLMENT";
 
-export type InstallmentProvider =
-    | "HOME_CREDIT"
-    | "FE_CREDIT"
-    | "MCREDIT"
-    | "HD_SAISON"
-    | "CREDIT_CARD";
+export type InstallmentProvider = "MOMO";
 
 export type InstallmentStatus = "PENDING" | "PAID" | "OVERDUE";
 
-export type OrderStatus = "PENDING" | "CONFIRMED" | "SHIPPING" | "DELIVERED" | "CANCELLED";
+export type OrderStatus = "PENDING" | "CONFIRMED" | "SHIPPING" | "DELIVERED" | "COMPLETED" | "CANCELLED";
 
 export interface ApiResponse<T> {
     status: number;
@@ -25,7 +20,7 @@ export interface OrderItemRequest {
 }
 
 export interface OrderCreateRequest {
-    accountId: number;
+    accountId?: number;
     shippingAddress?: string;
     note?: string;
     items: OrderItemRequest[];
@@ -41,6 +36,9 @@ export interface InstallmentResponse {
     totalMonths: number;
     monthNumber: number;
     amount: number;
+    principalAmount: number;
+    interestAmount: number;
+    overdueFee: number;
     dueDate: string;
     paidDate: string | null;
     installmentStatus: InstallmentStatus;
@@ -54,6 +52,17 @@ export interface OrderDetailItemResponse {
     price: number;
 }
 
+export interface ProductResponse {
+    productId: number;
+    name: string;
+    description?: string;
+    price: number;
+    stockQuantity?: number;
+    serialNumber?: string;
+    categoryId?: number;
+    categoryName?: string;
+}
+
 export interface OrderResponse {
     orderId: number;
     orderDate: string;
@@ -61,12 +70,40 @@ export interface OrderResponse {
     totalAmount: number;
     accountId: number;
     accountName: string;
+    shippingAddress?: string;
+    note?: string;
     orderDetails: OrderDetailItemResponse[];
     paymentType: PaymentType;
     installmentMonths?: number;
     installmentProvider?: InstallmentProvider;
     monthlyAmount?: number;
     installments?: InstallmentResponse[];
+}
+
+export interface MomoCreatePaymentRequest {
+    orderId: number;
+    installmentId?: number;
+    orderInfo?: string;
+}
+
+export interface MomoCreatePaymentResponse {
+    requestId: string;
+    orderCode: string;
+    payUrl: string;
+    deeplink?: string;
+    qrCodeUrl?: string;
+}
+
+export interface CashPaymentRequest {
+    orderId: number;
+    note?: string;
+}
+
+export interface CashPaymentResponse {
+    requestId: string;
+    orderCode: string;
+    status: string;
+    message: string;
 }
 
 export const orderApi = {
@@ -77,6 +114,9 @@ export const orderApi = {
 
     getOrderById: (orderId: number) =>
         axiosClient.get<ApiResponse<OrderResponse>>(`/api/orders/${orderId}`),
+
+    confirmReceived: (orderId: number) =>
+        axiosClient.put<ApiResponse<OrderResponse>>(`/api/orders/${orderId}/confirm-received`),
 };
 
 export const installmentApi = {
@@ -88,4 +128,17 @@ export const installmentApi = {
 
     payInstallment: (id: number) =>
         axiosClient.put<ApiResponse<InstallmentResponse>>(`/api/installments/${id}/pay`),
+};
+
+export const paymentApi = {
+    createMomoPayment: (payload: MomoCreatePaymentRequest) =>
+        axiosClient.post<ApiResponse<MomoCreatePaymentResponse>>("/api/payments/momo/create", payload),
+
+    payWithCash: (payload: CashPaymentRequest) =>
+        axiosClient.post<ApiResponse<CashPaymentResponse>>("/api/payments/cash/pay", payload),
+};
+
+export const productApi = {
+    getProductById: (productId: number) =>
+        axiosClient.get<ProductResponse>(`/api/products/${productId}`),
 };
