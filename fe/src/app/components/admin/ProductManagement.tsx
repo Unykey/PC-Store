@@ -26,13 +26,27 @@ export function ProductManagement() {
       setError('');
       try {
         const res = await getAll();
-        const data: ProductResponse[] = res.data.data || [];
-        // Map backend fields to local shape if necessary
+        // Backend may return either ApiResponse<ProductResponse[]> or
+        // ApiResponse<ProductPageResponse> where data.items is the array.
+        const payload: unknown = res?.data?.data;
+        let dataArray: ProductResponse[] = [];
+        if (Array.isArray(payload)) {
+          // payload is ProductResponse[]
+          dataArray = payload as ProductResponse[];
+        } else if (payload && typeof payload === 'object') {
+          // maybe ProductPageResponse { items: ProductResponse[] }
+          const maybePage = payload as { items?: unknown };
+          if (Array.isArray(maybePage.items)) {
+            dataArray = maybePage.items as ProductResponse[];
+          }
+        }
+
+        // Map backend fields to local shape if necessary and coerce price
         setProducts(
-          data.map((p: ProductResponse) => ({
+          dataArray.map((p: ProductResponse) => ({
             ...p,
-            price: Number(p.price),
-          } as Product))
+            price: Number(p.price ?? 0),
+          }))
         );
       } catch (err) {
         const maybeErr = err as { response?: { data?: { message?: string } } } | undefined;
@@ -132,6 +146,12 @@ export function ProductManagement() {
               {!loading && error && (
                 <tr>
                   <td colSpan={6} className="px-6 py-4 text-sm text-red-600">{error}</td>
+                </tr>
+              )}
+
+              {!loading && !error && filteredProducts.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-4 text-sm text-gray-600">No products found.</td>
                 </tr>
               )}
 

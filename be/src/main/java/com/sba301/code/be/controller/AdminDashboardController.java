@@ -2,6 +2,7 @@ package com.sba301.code.be.controller;
 
 import com.sba301.code.be.dto.response.ApiResponse;
 import com.sba301.code.be.dto.response.TopProductResponse;
+import com.sba301.code.be.dto.response.ProductResponse;
 import com.sba301.code.be.model.entity.Order;
 import com.sba301.code.be.model.entity.OrderDetail;
 import com.sba301.code.be.model.entity.Product;
@@ -9,6 +10,7 @@ import com.sba301.code.be.model.enums.OrderStatus;
 import com.sba301.code.be.repository.OrderDetailRepository;
 import com.sba301.code.be.repository.OrderRepository;
 import com.sba301.code.be.repository.ProductRepository;
+import com.sba301.code.be.service.ProductService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +31,7 @@ public class AdminDashboardController {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final OrderDetailRepository orderDetailRepository;
+    private final ProductService productService;
 
     // Total sales: sum of order.totalAmount across all orders
     @GetMapping("/total-sales")
@@ -65,6 +68,14 @@ public class AdminDashboardController {
         List<Product> lowStock = productRepository.findByStockQuantityLessThanEqual(threshold);
         long count = lowStock == null ? 0L : lowStock.size();
         return ResponseEntity.ok(ApiResponse.success(count, "Low stock count retrieved"));
+    }
+
+    // New: Low stock list (products with stock < 5)
+    @GetMapping("/low-stock-list")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getLowStockList() {
+        List<ProductResponse> low = productService.getLowStockProducts();
+        return ResponseEntity.ok(ApiResponse.success(low, "Low stock list retrieved"));
     }
 
     // Order status summary: counts grouped by OrderStatus

@@ -19,4 +19,7 @@ public interface ProductService {
     // New: filtered and paginated product listing for admin
     ProductPageResponse getProducts(String search, Long categoryId, Integer minStock, Integer maxStock,
                                       int page, int size, String sort);
+
+    // New: return products considered low stock (stock < 10)
+    List<ProductResponse> getLowStockProducts();
 }

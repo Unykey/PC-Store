@@ -43,13 +43,14 @@ export function DashboardHome() {
       setError(null);
 
       try {
+        // call backend dashboard endpoints; low-stock-list returns an array of product objects
         const [salesRes, productsRes, ordersRes, orderStatusRes, topProductsRes, lowStockRes] = await Promise.all([
           axiosClient.get('/api/admin/dashboard/total-sales'),
           axiosClient.get('/api/admin/dashboard/total-products'),
           axiosClient.get('/api/admin/dashboard/total-orders'),
           axiosClient.get('/api/admin/dashboard/order-status'),
           axiosClient.get('/api/admin/dashboard/top-products'),
-          axiosClient.get('/api/admin/dashboard/low-stock'),
+          axiosClient.get('/api/admin/dashboard/low-stock-list'),
         ]);
 
         if (!mounted) return;
@@ -187,14 +188,15 @@ export function DashboardHome() {
           setLowStockItems(
             lowStockVal.map((it, idx) => {
               const rec = isRecord(it) ? it as Record<string, unknown> : {};
-              const id = 'id' in rec && typeof rec.id === 'number' ? rec.id : idx;
+              // backend example uses productId and stockQuantity
+              const id = 'productId' in rec && typeof rec.productId === 'number' ? rec.productId : (('id' in rec && typeof rec.id === 'number') ? rec.id : idx);
               const name = 'name' in rec && typeof rec.name === 'string' ? rec.name : (('productName' in rec && typeof rec.productName === 'string') ? rec.productName as string : 'Unknown Product');
-              const sku = 'sku' in rec && typeof rec.sku === 'string' ? rec.sku : (('productSku' in rec && typeof rec.productSku === 'string') ? rec.productSku as string : undefined);
-              const stock = 'stock' in rec && typeof rec.stock === 'number' ? rec.stock : (('quantity' in rec && typeof rec.quantity === 'number') ? rec.quantity as number : 0);
+              const sku = 'serialNumber' in rec && typeof rec.serialNumber === 'string' ? rec.serialNumber : (('sku' in rec && typeof rec.sku === 'string') ? rec.sku as string : undefined);
+              const stock = 'stockQuantity' in rec && typeof rec.stockQuantity === 'number' ? rec.stockQuantity : (('stock' in rec && typeof rec.stock === 'number') ? rec.stock as number : (('quantity' in rec && typeof rec.quantity === 'number') ? rec.quantity as number : 0));
               const minStock = 'minStock' in rec && typeof rec.minStock === 'number' ? rec.minStock : (('min_stock' in rec && typeof rec.min_stock === 'number') ? rec.min_stock as number : undefined);
 
               return { id, name, sku, stock, minStock } as LowStockItem;
-            }),
+            })
           );
         } else {
           setLowStockItems([]);
@@ -266,8 +268,15 @@ export function DashboardHome() {
             </div>
             <div className="flex items-center gap-1 text-sm"></div>
           </div>
-          <h3 className="text-gray-600 text-sm font-medium mb-1">Low Stock</h3>
-          <p className="text-2xl font-bold text-gray-900">{loading ? 'Loading...' : (lowStockItems ? lowStockItems.length : '—')}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-gray-600 text-sm font-medium mb-1">Low Stock</h3>
+              <div className="text-xs text-gray-500">Showing current low-stock list from server</div>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900">{loading ? 'Loading...' : (lowStockItems ? lowStockItems.length : '—')}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -343,20 +352,19 @@ export function DashboardHome() {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">SKU</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Stock</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Min Stock</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {loading && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-sm text-gray-500">Loading low stock items...</td>
+                  <td colSpan={4} className="px-6 py-4 text-sm text-gray-500">Loading low stock items...</td>
                 </tr>
               )}
 
               {!loading && lowStockItems && lowStockItems.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-sm text-gray-500">No low stock items.</td>
+                  <td colSpan={4} className="px-6 py-4 text-sm text-gray-500">No low stock items.</td>
                 </tr>
               )}
 
@@ -367,7 +375,6 @@ export function DashboardHome() {
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-medium">{item.stock}</span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{item.minStock ?? '—'}</td>
                   <td className="px-6 py-4">
                     <button className="px-4 py-2 bg-[#f37021] text-white rounded-lg text-sm hover:bg-[#d96319] transition-colors">Restock</button>
                   </td>

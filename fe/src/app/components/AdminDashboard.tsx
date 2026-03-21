@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  Package, 
-  Warehouse, 
-  ShoppingCart, 
-  Users, 
-  Tag, 
-  Star, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Package,
+  Warehouse,
+  ShoppingCart,
+  Users,
+  Tag,
+  Star,
+  BarChart3,
   Settings,
+  AlertTriangle,
 } from 'lucide-react';
 import { DashboardHome } from './admin/DashboardHome';
 import { ProductManagement } from './admin/ProductManagement';
@@ -19,6 +20,8 @@ import { PromotionManagement } from './admin/PromotionManagement';
 import { ReviewManagement } from './admin/ReviewManagement';
 import { ReportsManagement } from './admin/ReportsManagement';
 import { SettingsManagement } from './admin/SettingsManagement';
+import { AdminSidebar } from './admin/AdminSidebar';
+import { LowStockList } from './admin/LowStockList';
 
 type MenuItem = {
   id: string;
@@ -35,6 +38,7 @@ const menuItems: MenuItem[] = [
   { id: 'promotions', label: 'Promotions', icon: Tag },
   { id: 'reviews', label: 'Reviews', icon: Star },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
+  { id: 'low-stock', label: 'Low Stock', icon: AlertTriangle },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -59,6 +63,8 @@ export function AdminDashboard() {
         return <ReviewManagement />;
       case 'reports':
         return <ReportsManagement />;
+      case 'low-stock':
+        return <LowStockList />;
       case 'settings':
         return <SettingsManagement />;
       default:
@@ -68,7 +74,7 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with Navigation */}
+      {/* Header with Navigation (kept minimal) */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 lg:px-6">
           {/* Top Bar */}
@@ -82,7 +88,7 @@ export function AdminDashboard() {
                 <p className="text-xs text-gray-500">TechShop Management</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
               {/* Notifications */}
               <button className="relative p-2 text-gray-500 hover:text-[#f37021] hover:bg-orange-50 rounded-lg transition-colors">
@@ -104,34 +110,15 @@ export function AdminDashboard() {
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <nav className="flex gap-1 overflow-x-auto py-2 scrollbar-hide">
-            {menuItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg whitespace-nowrap transition-all ${
-                    isActive
-                      ? 'bg-[#f37021] text-white shadow-md'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="font-medium text-sm">{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
+          {/* Removed top navigation tabs - they are now part of the sidebar */}
         </div>
       </header>
 
-      {/* Main Content - Centered */}
-      <main className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
-        {renderContent()}
+      {/* Layout: Sidebar (left) + Content (right) */}
+      <main className="max-w-7xl mx-auto px-4 lg:px-6 py-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+        <AdminSidebar active={activeTab} onSelect={(id) => setActiveTab(id)} menuItems={menuItems} />
+
+        <div>{renderContent()}</div>
       </main>
     </div>
   );
