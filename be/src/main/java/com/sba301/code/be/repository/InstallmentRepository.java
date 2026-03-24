@@ -22,4 +22,6 @@ public interface InstallmentRepository extends JpaRepository<Installment, Long> 
     List<Installment> findByInstallmentStatusInAndDueDateBefore(Collection<InstallmentStatus> statuses, LocalDate date);
 
     long countByOrder_OrderIdAndInstallmentStatusNot(Long orderId, InstallmentStatus status);
+
+    List<Installment> findByInstallmentStatus(InstallmentStatus status);
 }

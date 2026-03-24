@@ -3,6 +3,7 @@ import type { TooltipProps } from 'recharts';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Download, TrendingUp, TrendingDown } from 'lucide-react';
 import { reportsApi } from '@/api/reportsApi';
+import { installmentApi, type AdminInstallmentPaymentResponse } from '@/api/orderApi';
 
 const COLORS = ['#f37021', '#ff8c42', '#ffa500', '#ffb84d', '#ffc966'];
 
@@ -22,6 +23,10 @@ export function ReportsManagement() {
     returningCustomers: number;
     avgCustomerValue: number;
   } | null>(null);
+  const now = new Date();
+  const [paidMonth, setPaidMonth] = useState(now.getMonth() + 1);
+  const [paidYear, setPaidYear] = useState(now.getFullYear());
+  const [paidInstallments, setPaidInstallments] = useState<AdminInstallmentPaymentResponse[]>([]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
@@ -100,6 +105,26 @@ export function ReportsManagement() {
     };
   }, [months]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await installmentApi.adminGetPaidInstallments({ month: paidMonth, year: paidYear });
+        if (cancelled) return;
+        setPaidInstallments(res.data.data || []);
+      } catch (e) {
+        if (!cancelled) {
+          console.error('Failed to load paid installments', e);
+          setPaidInstallments([]);
+        }
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [paidMonth, paidYear]);
+
   const categoryData = useMemo(() => {
     const total = categoryRevenue.reduce((sum, c) => sum + c.revenue, 0);
     if (total <= 0) return [];
@@ -109,6 +134,93 @@ export function ReportsManagement() {
       sales: c.revenue,
     }));
   }, [categoryRevenue]);
+
+  const toCsv = (rows: Array<Array<string | number>>) =>
+    rows
+      .map((row) =>
+        row
+          .map((cell) => {
+            const s = String(cell ?? '');
+            if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+              return `"${s.replace(/"/g, '""')}"`;
+            }
+            return s;
+          })
+          .join(','),
+      )
+      .join('\n');
+
+  const downloadCsv = (filename: string, rows: Array<Array<string | number>>) => {
+    const csv = toCsv(rows);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportReport = () => {
+    const stamp = new Date().toISOString().slice(0, 10);
+
+    if (reportType === 'sales') {
+      const totalRevenue = salesData.reduce((s, p) => s + p.sales, 0);
+      const totalOrders = salesData.reduce((s, p) => s + p.orders, 0);
+      const avgOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+      const rows: Array<Array<string | number>> = [
+        ['Report Type', 'Sales Report'],
+        ['Period (months)', months],
+        ['Total Revenue', totalRevenue],
+        ['Total Orders', totalOrders],
+        ['Average Order Value', avgOrder],
+        [],
+        ['Monthly Sales'],
+        ['Month', 'Sales', 'Orders'],
+        ...salesData.map((r) => [r.month, r.sales, r.orders]),
+        [],
+        ['Category Revenue'],
+        ['Category', 'Revenue', 'Share (%)'],
+        ...categoryData.map((r) => [r.name, r.sales, r.value]),
+      ];
+      downloadCsv(`sales-report-${stamp}.csv`, rows);
+      return;
+    }
+
+    if (reportType === 'products') {
+      const rows: Array<Array<string | number>> = [
+        ['Report Type', 'Product Performance'],
+        ['Period (months)', months],
+        [],
+        ['Top Products'],
+        ['Rank', 'Product', 'Units Sold', 'Revenue', 'Growth (%)'],
+        ...topProducts.map((p, i) => [i + 1, p.name, p.sales, p.revenue, p.growth]),
+        [],
+        ['Monthly Product Trend'],
+        ['Month', 'Orders'],
+        ...salesData.map((r) => [r.month, r.orders]),
+      ];
+      downloadCsv(`product-performance-${stamp}.csv`, rows);
+      return;
+    }
+
+    const rows: Array<Array<string | number>> = [
+      ['Report Type', 'Customer Insights'],
+      ['Period (months)', months],
+      ['Total Customers', customerKpis?.totalCustomers ?? 0],
+      ['New Customers', customerKpis?.newCustomers ?? 0],
+      ['Returning Customers', customerKpis?.returningCustomers ?? 0],
+      ['Average Customer Value', customerKpis?.avgCustomerValue ?? 0],
+      [],
+      ['Customer Acquisition Trend'],
+      ['Month', 'Orders'],
+      ...salesData.map((r) => [r.month, r.orders]),
+    ];
+    downloadCsv(`customer-insights-${stamp}.csv`, rows);
+  };
 
   return (
     <div className="space-y-6">
@@ -146,7 +258,10 @@ export function ReportsManagement() {
             Customer Insights
           </button>
         </div>
-        <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+        <button
+          onClick={handleExportReport}
+          className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+        >
           <Download className="w-5 h-5" />
           Export Report
         </button>
@@ -400,6 +515,75 @@ export function ReportsManagement() {
                 <Line type="monotone" dataKey="orders" stroke="#f37021" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-lg font-semibold text-gray-900">Installment Payments (Monthly)</h3>
+              <div className="flex items-center gap-2">
+                <select
+                  value={paidMonth}
+                  onChange={(e) => setPaidMonth(Number(e.target.value))}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  {Array.from({ length: 12 }).map((_, idx) => (
+                    <option key={idx + 1} value={idx + 1}>{idx + 1}</option>
+                  ))}
+                </select>
+                <select
+                  value={paidYear}
+                  onChange={(e) => setPaidYear(Number(e.target.value))}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  {[now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2].map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Order</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Installment</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Paid Date</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Late Fee</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {paidInstallments.map((p) => (
+                    <tr key={p.installmentId} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm">
+                        <p className="font-medium text-gray-900">{p.customerName || `#${p.accountId}`}</p>
+                        <p className="text-gray-500">{p.customerPhone || p.customerEmail || '-'}</p>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">#{p.orderId}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{p.monthNumber}/{p.totalMonths}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {p.paidDate ? new Date(p.paidDate).toLocaleDateString('vi-VN') : '-'}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className={p.overdueFee > 0 ? 'font-medium text-red-600' : 'text-gray-500'}>
+                          {formatPrice(p.overdueFee || 0)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">{formatPrice(p.amount || 0)}</td>
+                    </tr>
+                  ))}
+                  {paidInstallments.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
+                        No paid installments for selected month.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </>
       )}

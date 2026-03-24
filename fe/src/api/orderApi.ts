@@ -52,6 +52,23 @@ export interface InstallmentResponse {
     installmentStatus: InstallmentStatus;
 }
 
+export interface AdminInstallmentPaymentResponse {
+    installmentId: number;
+    orderId: number;
+    monthNumber: number;
+    totalMonths: number;
+    amount: number;
+    principalAmount: number;
+    interestAmount: number;
+    overdueFee: number;
+    dueDate: string;
+    paidDate: string | null;
+    accountId: number;
+    customerName: string;
+    customerEmail?: string;
+    customerPhone?: string;
+}
+
 export interface OrderDetailItemResponse {
     productId: number;
     productName: string;
@@ -156,6 +173,9 @@ export const installmentApi = {
 
     payInstallment: (id: number) =>
         axiosClient.put<ApiResponse<InstallmentResponse>>(`/api/installments/${id}/pay`),
+
+    adminGetPaidInstallments: (params?: { month?: number; year?: number }) =>
+        axiosClient.get<ApiResponse<AdminInstallmentPaymentResponse[]>>("/api/installments/admin/paid", { params }),
 };
 
 export const paymentApi = {
