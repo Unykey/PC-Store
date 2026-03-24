@@ -39,6 +39,7 @@ const getStatusInfo = (status: OrderStatus) => {
     SHIPPING: { label: 'Đang giao', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Truck },
     DELIVERED: { label: 'Đã giao', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: Truck },
     COMPLETED: { label: 'Hoàn thành', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
+    DEFAULTED: { label: 'Mất khả năng trả góp', color: 'bg-rose-100 text-rose-800 border-rose-200', icon: XCircle },
     CANCELLED: { label: 'Đã hủy', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle },
   };
   return statusMap[status];
@@ -139,6 +140,7 @@ export function OrdersManagement() {
       CONFIRMED: byStatus.CONFIRMED ?? 0,
       SHIPPING: byStatus.SHIPPING ?? 0,
       COMPLETED: byStatus.COMPLETED ?? 0,
+      DEFAULTED: byStatus.DEFAULTED ?? 0,
       CANCELLED: byStatus.CANCELLED ?? 0,
     };
   }, [stats]);
@@ -155,6 +157,7 @@ export function OrdersManagement() {
       { value: 'SHIPPING', label: 'Đang giao' },
       { value: 'DELIVERED', label: 'Đã giao' },
       { value: 'COMPLETED', label: 'Hoàn thành' },
+      { value: 'DEFAULTED', label: 'Mất khả năng trả góp' },
       { value: 'CANCELLED', label: 'Đã hủy' },
     ],
     [],
@@ -207,12 +210,11 @@ export function OrdersManagement() {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
         <button
           onClick={() => setFilterStatus('all')}
-          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'all' ? 'border-[#f37021] ring-2 ring-[#f37021]/20' : 'border-gray-200'
-          }`}
+          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${filterStatus === 'all' ? 'border-[#f37021] ring-2 ring-[#f37021]/20' : 'border-gray-200'
+            }`}
         >
           <p className="text-sm text-gray-600 mb-1">Tất cả</p>
           <p className="text-[#f37021]">{statusCounts.all}</p>
@@ -220,9 +222,8 @@ export function OrdersManagement() {
 
         <button
           onClick={() => setFilterStatus('PENDING')}
-          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'PENDING' ? 'border-yellow-500 ring-2 ring-yellow-500/20' : 'border-gray-200'
-          }`}
+          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${filterStatus === 'PENDING' ? 'border-yellow-500 ring-2 ring-yellow-500/20' : 'border-gray-200'
+            }`}
         >
           <p className="text-sm text-gray-600 mb-1">Chờ xử lý</p>
           <p className="text-yellow-600">{statusCounts.PENDING}</p>
@@ -230,9 +231,8 @@ export function OrdersManagement() {
 
         <button
           onClick={() => setFilterStatus('CONFIRMED')}
-          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'CONFIRMED' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200'
-          }`}
+          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${filterStatus === 'CONFIRMED' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200'
+            }`}
         >
           <p className="text-sm text-gray-600 mb-1">Đang xử lý</p>
           <p className="text-blue-600">{statusCounts.CONFIRMED}</p>
@@ -240,9 +240,8 @@ export function OrdersManagement() {
 
         <button
           onClick={() => setFilterStatus('SHIPPING')}
-          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'SHIPPING' ? 'border-purple-500 ring-2 ring-purple-500/20' : 'border-gray-200'
-          }`}
+          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${filterStatus === 'SHIPPING' ? 'border-purple-500 ring-2 ring-purple-500/20' : 'border-gray-200'
+            }`}
         >
           <p className="text-sm text-gray-600 mb-1">Đang giao</p>
           <p className="text-purple-600">{statusCounts.SHIPPING}</p>
@@ -250,19 +249,26 @@ export function OrdersManagement() {
 
         <button
           onClick={() => setFilterStatus('COMPLETED')}
-          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'COMPLETED' ? 'border-[#0db14b] ring-2 ring-[#0db14b]/20' : 'border-gray-200'
-          }`}
+          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${filterStatus === 'COMPLETED' ? 'border-[#0db14b] ring-2 ring-[#0db14b]/20' : 'border-gray-200'
+            }`}
         >
           <p className="text-sm text-gray-600 mb-1">Hoàn thành</p>
           <p className="text-[#0db14b]">{statusCounts.COMPLETED}</p>
         </button>
 
         <button
+          onClick={() => setFilterStatus('DEFAULTED')}
+          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${filterStatus === 'DEFAULTED' ? 'border-rose-500 ring-2 ring-rose-500/20' : 'border-gray-200'
+            }`}
+        >
+          <p className="text-sm text-gray-600 mb-1">Vỡ nợ trả góp</p>
+          <p className="text-rose-600">{statusCounts.DEFAULTED}</p>
+        </button>
+
+        <button
           onClick={() => setFilterStatus('CANCELLED')}
-          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'CANCELLED' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-gray-200'
-          }`}
+          className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${filterStatus === 'CANCELLED' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-gray-200'
+            }`}
         >
           <p className="text-sm text-gray-600 mb-1">Đã hủy</p>
           <p className="text-red-600">{statusCounts.CANCELLED}</p>

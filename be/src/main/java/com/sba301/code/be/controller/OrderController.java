@@ -51,7 +51,7 @@ public class OrderController {
 
     @GetMapping("/{id}/history")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrderHistoryById(@PathVariable Long id,
-                                                                          @AuthenticationPrincipal CustomUserDetails currentUser) {
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
         OrderResponse order = orderService.getOrderById(id);
         // Allow if admin
         boolean isAdmin = currentUser != null && currentUser.getAuthorities().stream()
@@ -59,7 +59,8 @@ public class OrderController {
         if (!isAdmin) {
             // Allow if owner
             if (order.getAccountId() == null || !Objects.equals(order.getAccountId(), currentUser.getAccountId())) {
-                throw new org.springframework.security.access.AccessDeniedException("Not authorized to view this order");
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Not authorized to view this order");
             }
         }
         return ResponseEntity.ok(ApiResponse.success(order, "Order history retrieved"));
@@ -74,6 +75,14 @@ public class OrderController {
         // correct owner
         OrderResponse cancelledOrder = orderService.cancelOrder(id, currentUser.getAccountId());
         return ResponseEntity.ok(ApiResponse.success(cancelledOrder, "Order canceled successfully"));
+    }
+
+    @PutMapping("/{id}/cancel-installment")
+    public ResponseEntity<ApiResponse<OrderResponse>> cancelInstallmentOrder(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser) {
+        OrderResponse cancelledOrder = orderService.cancelInstallmentOrder(id, currentUser.getAccountId());
+        return ResponseEntity.ok(ApiResponse.success(cancelledOrder, "Installment contract updated successfully"));
     }
 
     @PutMapping("/{id}/status")

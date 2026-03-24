@@ -137,6 +137,40 @@ export default function OrderDetailPage() {
         return true;
     }, [order, isInstallmentFullyPaid]);
 
+    const canCancelInstallment = useMemo(() => {
+        if (!order || order.paymentType !== "INSTALLMENT") return false;
+        if (order.orderStatus === "CANCELLED" || order.orderStatus === "COMPLETED" || order.orderStatus === "DEFAULTED") {
+            return false;
+        }
+        return true;
+    }, [order, installments]);
+
+    const hasPaidInstallment = useMemo(() => {
+        return installments.some((ins) => ins.installmentStatus === "PAID");
+    }, [installments]);
+
+    const cancelInstallmentOrder = async () => {
+        if (!order || !canCancelInstallment || working) return;
+
+        const confirmMessage = hasPaidInstallment
+            ? "Bạn xác nhận dừng hợp đồng trả góp? Hệ thống sẽ chuyển đơn sang trạng thái mất khả năng thanh toán."
+            : "Bạn chắc chắn muốn hủy đơn trả góp này?";
+
+        const accepted = window.confirm(confirmMessage);
+        if (!accepted) return;
+
+        try {
+            setWorking(true);
+            setError("");
+            await orderApi.cancelInstallment(order.orderId);
+            await fetchOrder();
+        } catch (e: any) {
+            setError(e?.response?.data?.message || "Không thể hủy đơn trả góp.");
+        } finally {
+            setWorking(false);
+        }
+    };
+
     const displayMonthly = useMemo(() => {
         if (!order) return 0;
         if (order.monthlyAmount) return order.monthlyAmount;
@@ -258,6 +292,28 @@ export default function OrderDetailPage() {
                                     </div>
                                 </div>
 
+                                <div className="mb-4 flex flex-wrap gap-2">
+                                    {canCancelInstallment ? (
+                                        <button
+                                            disabled={working}
+                                            onClick={cancelInstallmentOrder}
+                                            className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 hover:bg-red-100 disabled:opacity-60"
+                                        >
+                                            {hasPaidInstallment ? "Dừng hợp đồng trả góp" : "Hủy đơn trả góp"}
+                                        </button>
+                                    ) : (
+                                        <p className="text-xs text-gray-500">
+                                            Hợp đồng không thể dừng ở trạng thái hiện tại.
+                                        </p>
+                                    )}
+                                </div>
+
+                                {order.orderStatus === "DEFAULTED" && (
+                                    <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+                                        Hợp đồng đang ở trạng thái mất khả năng thanh toán. Vui lòng liên hệ bộ phận hỗ trợ để xử lý công nợ.
+                                    </div>
+                                )}
+
                                 <div className="overflow-x-auto">
                                     <table className="w-full min-w-[680px] border-collapse text-sm">
                                         <thead>
@@ -291,7 +347,7 @@ export default function OrderDetailPage() {
                                                     <td className="px-3 py-2">
                                                         {(ins.installmentStatus === "PENDING" || ins.installmentStatus === "OVERDUE") ? (
                                                             <button
-                                                                disabled={working}
+                                                                disabled={working || order.orderStatus === "DEFAULTED"}
                                                                 onClick={() => payInstallment(ins.id)}
                                                                 className="rounded-md bg-[#f37021] px-3 py-1.5 text-xs text-white hover:bg-[#d45f1a] disabled:opacity-60"
                                                             >

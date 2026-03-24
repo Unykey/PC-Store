@@ -23,6 +23,8 @@ public interface OrderService {
 
     OrderResponse cancelOrder(Long orderId, Long accountId);
 
+    OrderResponse cancelInstallmentOrder(Long orderId, Long accountId);
+
     OrderResponse confirmReceived(Long orderId, Long accountId);
 
     PageResponse<OrderResponse> adminListOrders(String q, OrderStatus status, int page, int size);
