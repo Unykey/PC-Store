@@ -17,6 +17,15 @@ export interface ProductResponse {
   categoryName?: string;
 }
 
+export interface ProductRequest {
+  name: string;
+  description?: string;
+  price: number;
+  stockQuantity: number;
+  serialNumber?: string;
+  categoryId?: number;
+}
+
 export interface ProductPageResponse {
   items: ProductResponse[];
   total: number;
@@ -28,9 +37,9 @@ export const getAll = () =>
   axiosClient.get<ApiResponse<ProductResponse[] | ProductPageResponse>>('/api/admin/products');
 export const getById = (id: number) =>
   axiosClient.get<ApiResponse<ProductResponse>>(`/api/admin/products/${id}`);
-export const create = (payload: Partial<ProductResponse>) =>
+export const create = (payload: ProductRequest) =>
   axiosClient.post<ApiResponse<ProductResponse>>('/api/admin/products', payload);
-export const update = (id: number, payload: Partial<ProductResponse>) =>
+export const update = (id: number, payload: ProductRequest) =>
   axiosClient.put<ApiResponse<ProductResponse>>(`/api/admin/products/${id}`, payload);
 export const deleteProduct = (id: number) =>
   axiosClient.delete<ApiResponse<null>>(`/api/admin/products/${id}`);

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Search, Filter, Eye, Package, Truck, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Search, Eye, Package, Truck, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Input } from '@/app/components/ui/input';
 import { Button } from '@/app/components/ui/button';
 import {
@@ -18,86 +18,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/app/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
+import { orderApi, type OrderResponse, type OrderStatus } from '@/api/orderApi';
 
-type OrderStatus = 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled';
+const toOrderCode = (orderId: number) => `ORD-${String(orderId).padStart(3, '0')}`;
 
-interface Order {
-  id: string;
-  customerName: string;
-  email: string;
-  phone: string;
-  products: string;
-  total: string;
-  status: OrderStatus;
-  date: string;
-  address: string;
-}
+const formatDate = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+};
 
-const mockOrders: Order[] = [
-  {
-    id: 'ORD-001',
-    customerName: 'Trần Văn A',
-    email: 'trana@email.com',
-    phone: '0901 234 567',
-    products: 'Laptop Gaming MSI Katana 15',
-    total: '25.990.000đ',
-    status: 'completed',
-    date: '15/01/2026',
-    address: '123 Nguyễn Huệ, Q1, TP.HCM'
-  },
-  {
-    id: 'ORD-002',
-    customerName: 'Lê Thị B',
-    email: 'lethib@email.com',
-    phone: '0902 345 678',
-    products: 'PC Gaming RGB - Intel i9',
-    total: '52.990.000đ',
-    status: 'shipping',
-    date: '14/01/2026',
-    address: '456 Lê Lợi, Q3, TP.HCM'
-  },
-  {
-    id: 'ORD-003',
-    customerName: 'Phạm Văn C',
-    email: 'phamvanc@email.com',
-    phone: '0903 456 789',
-    products: 'Card VGA RTX 4070 Ti SUPER',
-    total: '23.990.000đ',
-    status: 'processing',
-    date: '14/01/2026',
-    address: '789 Trần Hưng Đạo, Q5, TP.HCM'
-  },
-  {
-    id: 'ORD-004',
-    customerName: 'Nguyễn Thị D',
-    email: 'nguyenthid@email.com',
-    phone: '0904 567 890',
-    products: 'CPU Intel Core i9-13900K',
-    total: '14.990.000đ',
-    status: 'pending',
-    date: '13/01/2026',
-    address: '321 Võ Văn Tần, Q3, TP.HCM'
-  },
-  {
-    id: 'ORD-005',
-    customerName: 'Hoàng Văn E',
-    email: 'hoangvane@email.com',
-    phone: '0905 678 901',
-    products: 'Laptop Dell XPS 15',
-    total: '45.990.000đ',
-    status: 'cancelled',
-    date: '12/01/2026',
-    address: '654 Pasteur, Q1, TP.HCM'
-  }
-];
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value);
 
 const getStatusInfo = (status: OrderStatus) => {
-  const statusMap = {
-    pending: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
-    processing: { label: 'Đang xử lý', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Package },
-    shipping: { label: 'Đang giao', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Truck },
-    completed: { label: 'Hoàn thành', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
-    cancelled: { label: 'Đã hủy', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle }
+  const statusMap: Record<OrderStatus, { label: string; color: string; icon: typeof Clock }> = {
+    PENDING: { label: 'Chờ xử lý', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
+    CONFIRMED: { label: 'Đang xử lý', color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Package },
+    SHIPPING: { label: 'Đang giao', color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Truck },
+    DELIVERED: { label: 'Đã giao', color: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: Truck },
+    COMPLETED: { label: 'Hoàn thành', color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
+    CANCELLED: { label: 'Đã hủy', color: 'bg-red-100 text-red-800 border-red-200', icon: XCircle },
   };
   return statusMap[status];
 };
@@ -105,22 +47,161 @@ const getStatusInfo = (status: OrderStatus) => {
 export function OrdersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<OrderStatus | 'all'>('all');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [page, setPage] = useState(0);
+  const [size] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState<OrderResponse[]>([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  const filteredOrders = mockOrders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  const [stats, setStats] = useState<{ total: number; byStatus: Partial<Record<OrderStatus, number>> } | null>(null);
 
-  const statusCounts = {
-    all: mockOrders.length,
-    pending: mockOrders.filter(o => o.status === 'pending').length,
-    processing: mockOrders.filter(o => o.status === 'processing').length,
-    shipping: mockOrders.filter(o => o.status === 'shipping').length,
-    completed: mockOrders.filter(o => o.status === 'completed').length,
-    cancelled: mockOrders.filter(o => o.status === 'cancelled').length
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
+  const [selectedNextStatus, setSelectedNextStatus] = useState<OrderStatus | ''>('');
+  const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm, filterStatus]);
+
+  const queryParams = useMemo(
+    () => ({
+      q: searchTerm?.trim() ? searchTerm.trim() : undefined,
+      status: filterStatus === 'all' ? undefined : filterStatus,
+      page,
+      size,
+    }),
+    [searchTerm, filterStatus, page, size],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    orderApi
+      .adminStats()
+      .then((res) => {
+        if (cancelled) return;
+        setStats(res.data.data);
+      })
+      .catch((err) => {
+        console.error('Failed to load order stats', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setLoading(true);
+      orderApi
+        .adminList(queryParams)
+        .then((res) => {
+          const data = res.data.data;
+          setOrders(data.items || []);
+          setTotalItems(data.totalItems || 0);
+          setTotalPages(data.totalPages || 0);
+        })
+        .catch((err) => {
+          console.error('Failed to load orders', err);
+          setOrders([]);
+          setTotalItems(0);
+          setTotalPages(0);
+        })
+        .finally(() => setLoading(false));
+    }, 300);
+
+    return () => clearTimeout(handle);
+  }, [queryParams]);
+
+  useEffect(() => {
+    if (selectedOrderId == null) return;
+    let cancelled = false;
+    setSelectedOrder(null);
+    setSelectedNextStatus('');
+    orderApi
+      .adminGetById(selectedOrderId)
+      .then((res) => {
+        if (cancelled) return;
+        setSelectedOrder(res.data.data);
+      })
+      .catch((err) => console.error('Failed to load order detail', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedOrderId]);
+
+  const statusCounts = useMemo(() => {
+    const byStatus = stats?.byStatus || {};
+    return {
+      all: stats?.total ?? 0,
+      PENDING: byStatus.PENDING ?? 0,
+      CONFIRMED: byStatus.CONFIRMED ?? 0,
+      SHIPPING: byStatus.SHIPPING ?? 0,
+      COMPLETED: byStatus.COMPLETED ?? 0,
+      CANCELLED: byStatus.CANCELLED ?? 0,
+    };
+  }, [stats]);
+
+  const rowsCountText = useMemo(() => {
+    if (loading) return 'Đang tải...';
+    return `Hiển thị ${orders.length} trên ${totalItems} đơn hàng`;
+  }, [loading, orders.length, totalItems]);
+
+  const statusOptions: { value: OrderStatus; label: string }[] = useMemo(
+    () => [
+      { value: 'PENDING', label: 'Chờ xử lý' },
+      { value: 'CONFIRMED', label: 'Đang xử lý' },
+      { value: 'SHIPPING', label: 'Đang giao' },
+      { value: 'DELIVERED', label: 'Đã giao' },
+      { value: 'COMPLETED', label: 'Hoàn thành' },
+      { value: 'CANCELLED', label: 'Đã hủy' },
+    ],
+    [],
+  );
+
+  const refresh = async () => {
+    const [listRes, statsRes] = await Promise.allSettled([orderApi.adminList(queryParams), orderApi.adminStats()]);
+    if (listRes.status === 'fulfilled') {
+      const data = listRes.value.data.data;
+      setOrders(data.items || []);
+      setTotalItems(data.totalItems || 0);
+      setTotalPages(data.totalPages || 0);
+    }
+    if (statsRes.status === 'fulfilled') {
+      setStats(statsRes.value.data.data);
+    }
+  };
+
+  const onUpdateStatus = async () => {
+    if (!selectedOrder || !selectedNextStatus) return;
+    try {
+      setActionLoading(true);
+      await orderApi.adminUpdateStatus(selectedOrder.orderId, selectedNextStatus);
+      await refresh();
+      const detail = await orderApi.adminGetById(selectedOrder.orderId);
+      setSelectedOrder(detail.data.data);
+      setSelectedNextStatus('');
+    } catch (err) {
+      console.error('Failed to update status', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const onCancelOrder = async () => {
+    if (!selectedOrder) return;
+    try {
+      setActionLoading(true);
+      await orderApi.adminCancel(selectedOrder.orderId);
+      await refresh();
+      const detail = await orderApi.adminGetById(selectedOrder.orderId);
+      setSelectedOrder(detail.data.data);
+    } catch (err) {
+      console.error('Failed to cancel order', err);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -138,53 +219,53 @@ export function OrdersManagement() {
         </button>
 
         <button
-          onClick={() => setFilterStatus('pending')}
+          onClick={() => setFilterStatus('PENDING')}
           className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'pending' ? 'border-yellow-500 ring-2 ring-yellow-500/20' : 'border-gray-200'
+            filterStatus === 'PENDING' ? 'border-yellow-500 ring-2 ring-yellow-500/20' : 'border-gray-200'
           }`}
         >
           <p className="text-sm text-gray-600 mb-1">Chờ xử lý</p>
-          <p className="text-yellow-600">{statusCounts.pending}</p>
+          <p className="text-yellow-600">{statusCounts.PENDING}</p>
         </button>
 
         <button
-          onClick={() => setFilterStatus('processing')}
+          onClick={() => setFilterStatus('CONFIRMED')}
           className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'processing' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200'
+            filterStatus === 'CONFIRMED' ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-200'
           }`}
         >
           <p className="text-sm text-gray-600 mb-1">Đang xử lý</p>
-          <p className="text-blue-600">{statusCounts.processing}</p>
+          <p className="text-blue-600">{statusCounts.CONFIRMED}</p>
         </button>
 
         <button
-          onClick={() => setFilterStatus('shipping')}
+          onClick={() => setFilterStatus('SHIPPING')}
           className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'shipping' ? 'border-purple-500 ring-2 ring-purple-500/20' : 'border-gray-200'
+            filterStatus === 'SHIPPING' ? 'border-purple-500 ring-2 ring-purple-500/20' : 'border-gray-200'
           }`}
         >
           <p className="text-sm text-gray-600 mb-1">Đang giao</p>
-          <p className="text-purple-600">{statusCounts.shipping}</p>
+          <p className="text-purple-600">{statusCounts.SHIPPING}</p>
         </button>
 
         <button
-          onClick={() => setFilterStatus('completed')}
+          onClick={() => setFilterStatus('COMPLETED')}
           className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'completed' ? 'border-[#0db14b] ring-2 ring-[#0db14b]/20' : 'border-gray-200'
+            filterStatus === 'COMPLETED' ? 'border-[#0db14b] ring-2 ring-[#0db14b]/20' : 'border-gray-200'
           }`}
         >
           <p className="text-sm text-gray-600 mb-1">Hoàn thành</p>
-          <p className="text-[#0db14b]">{statusCounts.completed}</p>
+          <p className="text-[#0db14b]">{statusCounts.COMPLETED}</p>
         </button>
 
         <button
-          onClick={() => setFilterStatus('cancelled')}
+          onClick={() => setFilterStatus('CANCELLED')}
           className={`bg-white rounded-lg shadow-sm border p-4 text-left transition-all hover:shadow-md ${
-            filterStatus === 'cancelled' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-gray-200'
+            filterStatus === 'CANCELLED' ? 'border-red-500 ring-2 ring-red-500/20' : 'border-gray-200'
           }`}
         >
           <p className="text-sm text-gray-600 mb-1">Đã hủy</p>
-          <p className="text-red-600">{statusCounts.cancelled}</p>
+          <p className="text-red-600">{statusCounts.CANCELLED}</p>
         </button>
       </div>
 
@@ -200,9 +281,12 @@ export function OrdersManagement() {
               className="pl-10"
             />
           </div>
-          <Button variant="outline" className="border-[#f37021] text-[#f37021] hover:bg-[#f37021] hover:text-white">
-            <Filter size={20} className="mr-2" />
-            Bộ lọc
+          <Button
+            variant="outline"
+            className="border-[#f37021] text-[#f37021] hover:bg-[#f37021] hover:text-white"
+            onClick={() => refresh()}
+          >
+            Tải lại
           </Button>
         </div>
       </div>
@@ -223,27 +307,29 @@ export function OrdersManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.map((order) => {
-                const statusInfo = getStatusInfo(order.status);
+              {orders.map((order) => {
+                const statusInfo = getStatusInfo(order.orderStatus);
                 const StatusIcon = statusInfo.icon;
+                const firstProduct = order.orderDetails?.[0]?.productName ?? '—';
+                const extra = (order.orderDetails?.length ?? 0) > 1 ? ` + ${(order.orderDetails.length - 1)} sản phẩm` : '';
                 return (
-                  <TableRow key={order.id} className="hover:bg-gray-50">
-                    <TableCell className="font-medium text-[#f37021]">{order.id}</TableCell>
+                  <TableRow key={order.orderId} className="hover:bg-gray-50">
+                    <TableCell className="font-medium text-[#f37021]">{toOrderCode(order.orderId)}</TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{order.customerName}</p>
-                        <p className="text-sm text-gray-600">{order.phone}</p>
+                        <p className="font-medium">{order.accountName}</p>
+                        <p className="text-sm text-gray-600">{order.accountPhoneNumber || '—'}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-xs truncate">{order.products}</TableCell>
-                    <TableCell className="font-medium text-[#0db14b]">{order.total}</TableCell>
+                    <TableCell className="max-w-xs truncate">{firstProduct}{extra}</TableCell>
+                    <TableCell className="font-medium text-[#0db14b]">{formatCurrency(order.totalAmount)}</TableCell>
                     <TableCell>
                       <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border ${statusInfo.color}`}>
                         <StatusIcon size={14} />
                         {statusInfo.label}
                       </div>
                     </TableCell>
-                    <TableCell className="text-gray-600">{order.date}</TableCell>
+                    <TableCell className="text-gray-600">{formatDate(order.orderDate)}</TableCell>
                     <TableCell className="text-right">
                       <Dialog>
                         <DialogTrigger asChild>
@@ -251,70 +337,127 @@ export function OrdersManagement() {
                             variant="ghost"
                             size="sm"
                             className="text-[#f37021] hover:text-[#d45f1a] hover:bg-[#f37021]/10"
-                            onClick={() => setSelectedOrder(order)}
+                            onClick={() => setSelectedOrderId(order.orderId)}
                           >
                             <Eye size={16} className="mr-1" />
                             Xem
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle className="text-[#f37021]">Chi Tiết Đơn Hàng {order.id}</DialogTitle>
-                            <DialogDescription>
+                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader className="sticky top-0 bg-white z-10 pb-4">
+                            <DialogTitle className="text-2xl font-bold text-gray-900">
+                              Chi Tiết Đơn Hàng {toOrderCode(order.orderId)}
+                            </DialogTitle>
+                            <DialogDescription className="text-gray-600">
                               Thông tin chi tiết về đơn hàng
                             </DialogDescription>
                           </DialogHeader>
-                          {selectedOrder && (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <p className="text-sm text-gray-600 mb-1">Khách hàng</p>
-                                  <p className="font-medium">{selectedOrder.customerName}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-600 mb-1">Ngày đặt</p>
-                                  <p className="font-medium">{selectedOrder.date}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-600 mb-1">Email</p>
-                                  <p className="font-medium">{selectedOrder.email}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm text-gray-600 mb-1">Số điện thoại</p>
-                                  <p className="font-medium">{selectedOrder.phone}</p>
-                                </div>
-                                <div className="col-span-2">
-                                  <p className="text-sm text-gray-600 mb-1">Địa chỉ giao hàng</p>
-                                  <p className="font-medium">{selectedOrder.address}</p>
-                                </div>
-                              </div>
-
-                              <div className="border-t pt-4">
-                                <p className="text-sm text-gray-600 mb-2">Sản phẩm</p>
-                                <div className="bg-gray-50 rounded-lg p-4">
-                                  <p className="font-medium">{selectedOrder.products}</p>
+                          {selectedOrder ? (
+                            <div className="space-y-6">
+                              {/* Customer Info Section */}
+                              <div className="border-b pb-6">
+                                <h3 className="font-semibold text-gray-900 mb-4">Thông tin khách hàng</h3>
+                                <div className="space-y-3">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Khách hàng:</span>
+                                    <span className="font-medium text-gray-900">{selectedOrder.accountName}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Email:</span>
+                                    <span className="font-medium text-gray-900">{selectedOrder.accountEmail || '—'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Số điện thoại:</span>
+                                    <span className="font-medium text-gray-900">{selectedOrder.accountPhoneNumber || '—'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Địa chỉ giao hàng:</span>
+                                    <span className="font-medium text-gray-900">{selectedOrder.shippingAddress || '—'}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Ngày đặt:</span>
+                                    <span className="font-medium text-gray-900">{formatDate(selectedOrder.orderDate)}</span>
+                                  </div>
                                 </div>
                               </div>
 
-                              <div className="border-t pt-4">
-                                <div className="flex justify-between items-center">
-                                  <span className="font-medium">Tổng cộng:</span>
-                                  <span className="text-[#0db14b]">{selectedOrder.total}</span>
+                              {/* Product Section */}
+                              <div className="border-b pb-6">
+                                <h3 className="font-semibold text-gray-900 mb-4">Sản phẩm</h3>
+                                <div className="space-y-2">
+                                  {selectedOrder.orderDetails?.map((item) => (
+                                    <div
+                                      key={item.productId}
+                                      className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 flex justify-between gap-4"
+                                    >
+                                      <div className="min-w-0">
+                                        <p className="font-medium text-gray-900 truncate">{item.productName}</p>
+                                        <p className="text-sm text-gray-600 mt-1">Số lượng: {item.quantity}</p>
+                                      </div>
+                                      <div className="text-right shrink-0">
+                                        <p className="font-medium text-gray-900">{formatCurrency(item.price)}</p>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                          {formatCurrency(item.price * item.quantity)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
 
-                              <div className="border-t pt-4">
-                                <p className="text-sm text-gray-600 mb-2">Trạng thái đơn hàng</p>
-                                <div className="flex gap-2">
-                                  <Button className="bg-[#f37021] hover:bg-[#d45f1a] text-white flex-1">
-                                    Cập nhật trạng thái
-                                  </Button>
-                                  <Button variant="outline" className="border-red-500 text-red-600 hover:bg-red-50">
-                                    Hủy đơn
-                                  </Button>
+                              {/* Total Section */}
+                              <div className="border-b pb-6">
+                                <div className="flex justify-between items-center bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                                  <span className="font-semibold text-gray-900">Tổng cộng:</span>
+                                  <span className="text-2xl font-bold text-[#0db14b]">{formatCurrency(selectedOrder.totalAmount)}</span>
+                                </div>
+                              </div>
+
+                              {/* Order Status Section */}
+                              <div className="border-b pb-6">
+                                <h3 className="font-semibold text-gray-900 mb-4">Trạng thái đơn hàng</h3>
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="text-sm text-gray-600">
+                                      Hiện tại: <span className="font-medium text-gray-900">{getStatusInfo(selectedOrder.orderStatus).label}</span>
+                                    </div>
+                                    <div className="w-56">
+                                      <Select value={selectedNextStatus} onValueChange={(v) => setSelectedNextStatus(v as OrderStatus)}>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Chọn trạng thái" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {statusOptions.map((s) => (
+                                            <SelectItem key={s.value} value={s.value}>
+                                              {s.label}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      className="bg-[#f37021] hover:bg-[#d45f1a] text-white flex-1"
+                                      disabled={!selectedNextStatus || actionLoading}
+                                      onClick={onUpdateStatus}
+                                    >
+                                      Cập nhật trạng thái
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      className="border-red-500 text-red-600 hover:bg-red-50 flex-1"
+                                      disabled={actionLoading || selectedOrder.orderStatus === 'CANCELLED'}
+                                      onClick={onCancelOrder}
+                                    >
+                                      Hủy đơn
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             </div>
+                          ) : (
+                            <div className="py-10 text-center text-gray-600">Đang tải chi tiết đơn hàng...</div>
                           )}
                         </DialogContent>
                       </Dialog>
@@ -322,6 +465,13 @@ export function OrdersManagement() {
                   </TableRow>
                 );
               })}
+              {!loading && orders.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-gray-600 py-10">
+                    Không có đơn hàng
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
@@ -329,23 +479,20 @@ export function OrdersManagement() {
 
       {/* Pagination */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
-          Hiển thị {filteredOrders.length} trên {mockOrders.length} đơn hàng
-        </p>
+        <p className="text-sm text-gray-600">{rowsCountText}</p>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled>
+          <Button variant="outline" size="sm" disabled={page <= 0} onClick={() => setPage((p) => Math.max(0, p - 1))}>
             Trước
           </Button>
-          <Button variant="outline" size="sm" className="bg-[#f37021] text-white border-[#f37021]">
-            1
+          <Button variant="outline" size="sm" className="bg-[#f37021] text-white border-[#f37021]" disabled>
+            {page + 1} / {Math.max(1, totalPages)}
           </Button>
-          <Button variant="outline" size="sm">
-            2
-          </Button>
-          <Button variant="outline" size="sm">
-            3
-          </Button>
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={totalPages === 0 || page >= totalPages - 1}
+            onClick={() => setPage((p) => p + 1)}
+          >
             Sau
           </Button>
         </div>

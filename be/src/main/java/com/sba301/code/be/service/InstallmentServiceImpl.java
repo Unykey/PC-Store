@@ -1,6 +1,7 @@
 package com.sba301.code.be.service;
 
 import com.sba301.code.be.dto.response.InstallmentResponse;
+import com.sba301.code.be.dto.response.AdminInstallmentPaymentResponse;
 import com.sba301.code.be.exception.ResourceNotFoundException;
 import com.sba301.code.be.model.entity.Installment;
 import com.sba301.code.be.model.entity.PaymentSettings;
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Comparator;
 
 @Service
 @AllArgsConstructor
@@ -88,6 +90,19 @@ public class InstallmentServiceImpl implements InstallmentService {
         markOverdueInstallments();
     }
 
+    @Override
+    public List<AdminInstallmentPaymentResponse> getPaidInstallments(Integer month, Integer year) {
+        List<Installment> paid = installmentRepository.findByInstallmentStatus(InstallmentStatus.PAID);
+
+        return paid.stream()
+                .filter(i -> i.getPaidDate() != null)
+                .filter(i -> month == null || i.getPaidDate().getMonthValue() == month)
+                .filter(i -> year == null || i.getPaidDate().getYear() == year)
+                .sorted(Comparator.comparing(Installment::getPaidDate).reversed())
+                .map(this::mapToAdminPaymentResponse)
+                .toList();
+    }
+
     private InstallmentResponse mapToResponse(Installment installment) {
         InstallmentResponse response = new InstallmentResponse();
         response.setId(installment.getId());
@@ -102,6 +117,29 @@ public class InstallmentServiceImpl implements InstallmentService {
         response.setDueDate(installment.getDueDate());
         response.setPaidDate(installment.getPaidDate());
         response.setInstallmentStatus(installment.getInstallmentStatus());
+        return response;
+    }
+
+    private AdminInstallmentPaymentResponse mapToAdminPaymentResponse(Installment installment) {
+        AdminInstallmentPaymentResponse response = new AdminInstallmentPaymentResponse();
+        response.setInstallmentId(installment.getId());
+        response.setOrderId(installment.getOrder().getOrderId());
+        response.setMonthNumber(installment.getMonthNumber());
+        response.setTotalMonths(installment.getOrder().getInstallmentMonths());
+        response.setAmount(installment.getAmount());
+        response.setPrincipalAmount(installment.getPrincipalAmount());
+        response.setInterestAmount(installment.getInterestAmount());
+        response.setOverdueFee(installment.getOverdueFee());
+        response.setDueDate(installment.getDueDate());
+        response.setPaidDate(installment.getPaidDate());
+
+        if (installment.getOrder().getAccount() != null) {
+            response.setAccountId(installment.getOrder().getAccount().getAccountId());
+            response.setCustomerName(installment.getOrder().getAccount().getFullName());
+            response.setCustomerEmail(installment.getOrder().getAccount().getEmail());
+            response.setCustomerPhone(installment.getOrder().getAccount().getPhoneNumber());
+        }
+
         return response;
     }
 }

@@ -4,10 +4,8 @@ import {
   Warehouse,
   ShoppingCart,
   Users,
-  Tag,
   Star,
   BarChart3,
-  Settings,
 } from 'lucide-react';
 
 type MenuItem = {
@@ -28,10 +26,8 @@ const defaultItems: MenuItem[] = [
   { id: 'inventory', label: 'Inventory', icon: Warehouse },
   { id: 'orders', label: 'Orders', icon: ShoppingCart },
   { id: 'customers', label: 'Customers', icon: Users },
-  { id: 'promotions', label: 'Promotions', icon: Tag },
   { id: 'reviews', label: 'Reviews', icon: Star },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
-  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export function AdminSidebar({ active, onSelect, menuItems }: AdminSidebarProps) {

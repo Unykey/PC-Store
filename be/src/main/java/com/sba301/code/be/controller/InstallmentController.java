@@ -1,11 +1,13 @@
 package com.sba301.code.be.controller;
 
 import com.sba301.code.be.dto.response.ApiResponse;
+import com.sba301.code.be.dto.response.AdminInstallmentPaymentResponse;
 import com.sba301.code.be.dto.response.InstallmentResponse;
 import com.sba301.code.be.security.CustomUserDetails;
 import com.sba301.code.be.service.InstallmentService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,5 +40,16 @@ public class InstallmentController {
     public ResponseEntity<ApiResponse<InstallmentResponse>> pay(@PathVariable Long id) {
         InstallmentResponse paid = installmentService.markAsPaid(id);
         return ResponseEntity.ok(ApiResponse.success(paid, "Installment marked as paid"));
+    }
+
+    /** Admin: list paid installments and who paid by month/year */
+    @GetMapping("/admin/paid")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<AdminInstallmentPaymentResponse>>> getAdminPaidInstallments(
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year
+    ) {
+        List<AdminInstallmentPaymentResponse> result = installmentService.getPaidInstallments(month, year);
+        return ResponseEntity.ok(ApiResponse.success(result, "Paid installments fetched successfully"));
     }
 }
