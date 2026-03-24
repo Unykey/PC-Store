@@ -2,9 +2,11 @@ package com.sba301.code.be.service;
 
 import com.sba301.code.be.dto.request.OrderCreateRequest;
 import com.sba301.code.be.dto.request.OrderItemRequest;
+import com.sba301.code.be.dto.response.AdminOrderStatsResponse;
 import com.sba301.code.be.dto.response.InstallmentResponse;
 import com.sba301.code.be.dto.response.OrderDetailResponse;
 import com.sba301.code.be.dto.response.OrderResponse;
+import com.sba301.code.be.dto.response.PageResponse;
 import com.sba301.code.be.model.entity.*;
 import com.sba301.code.be.model.enums.InstallmentProvider;
 import com.sba301.code.be.model.enums.InstallmentStatus;
@@ -13,14 +15,21 @@ import com.sba301.code.be.model.enums.PaymentTransactionStatus;
 import com.sba301.code.be.model.enums.PaymentType;
 import com.sba301.code.be.repository.*;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -225,6 +234,87 @@ public class OrderServiceImpl implements OrderService {
         return mapToResponse(orderRepository.save(order));
     }
 
+    @Override
+    public PageResponse<OrderResponse> adminListOrders(String q, OrderStatus status, int page, int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(100, Math.max(1, size));
+
+        Specification<Order> spec = (root, query, cb) -> cb.conjunction();
+
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("orderStatus"), status));
+        }
+
+        if (q != null && !q.trim().isEmpty()) {
+            String trimmed = q.trim();
+            spec = spec.and((root, query, cb) -> {
+                String like = "%" + trimmed.toLowerCase() + "%";
+                // Join account to search name/email/phone
+                Join<Order, Account> accountJoin = root.join("account");
+
+                Predicate byName = cb.like(cb.lower(accountJoin.get("fullName")), like);
+                Predicate byEmail = cb.like(cb.lower(accountJoin.get("email")), like);
+                Predicate byPhone = cb.like(cb.lower(accountJoin.get("phoneNumber")), like);
+
+                // If numeric, also allow exact orderId match
+                try {
+                    Long id = Long.parseLong(trimmed);
+                    Predicate byId = cb.equal(root.get("orderId"), id);
+                    return cb.or(byId, byName, byEmail, byPhone);
+                } catch (NumberFormatException ex) {
+                    return cb.or(byName, byEmail, byPhone);
+                }
+            });
+        }
+
+        Page<Order> result = orderRepository.findAll(
+                spec,
+                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "orderDate"))
+        );
+
+        List<OrderResponse> items = result.getContent().stream().map(this::mapToResponse).toList();
+        return new PageResponse<>(items, result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
+    }
+
+    @Override
+    public AdminOrderStatsResponse adminGetOrderStats() {
+        AdminOrderStatsResponse stats = new AdminOrderStatsResponse();
+        stats.setTotal(orderRepository.count());
+
+        var byStatus = new EnumMap<OrderStatus, Long>(OrderStatus.class);
+        for (OrderStatus s : OrderStatus.values()) {
+            byStatus.put(s, orderRepository.countByOrderStatus(s));
+        }
+        stats.setByStatus(byStatus);
+        return stats;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse adminCancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            return mapToResponse(order);
+        }
+
+        if (order.getOrderStatus() == OrderStatus.DELIVERED || order.getOrderStatus() == OrderStatus.COMPLETED) {
+            throw new RuntimeException("Không thể hủy đơn hàng đã giao hoặc đã hoàn tất");
+        }
+
+        // Allow admin to cancel pending/confirmed/shipping orders
+        order.setOrderStatus(OrderStatus.CANCELLED);
+
+        for (OrderDetail detail : order.getOrderDetails()) {
+            Product p = detail.getProduct();
+            p.setStockQuantity(p.getStockQuantity() + detail.getQuantity());
+            productRepository.save(p);
+        }
+
+        return mapToResponse(orderRepository.save(order));
+    }
+
     private boolean isOrderFullyPaid(Order order) {
         if (order.getPaymentType() == PaymentType.INSTALLMENT) {
             return installmentRepository.countByOrder_OrderIdAndInstallmentStatusNot(
@@ -248,6 +338,8 @@ public class OrderServiceImpl implements OrderService {
         if (order.getAccount() != null) {
             response.setAccountId(order.getAccount().getAccountId());
             response.setAccountName(order.getAccount().getFullName());
+            response.setAccountEmail(order.getAccount().getEmail());
+            response.setAccountPhoneNumber(order.getAccount().getPhoneNumber());
         }
 
         if (order.getOrderDetails() != null) {

@@ -14,6 +14,14 @@ export interface ApiResponse<T> {
     data: T;
 }
 
+export interface PageResponse<T> {
+    items: T[];
+    page: number;
+    size: number;
+    totalItems: number;
+    totalPages: number;
+}
+
 export interface OrderItemRequest {
     productId: number;
     quantity: number;
@@ -70,6 +78,8 @@ export interface OrderResponse {
     totalAmount: number;
     accountId: number;
     accountName: string;
+    accountEmail?: string;
+    accountPhoneNumber?: string;
     shippingAddress?: string;
     note?: string;
     orderDetails: OrderDetailItemResponse[];
@@ -117,6 +127,24 @@ export const orderApi = {
 
     confirmReceived: (orderId: number) =>
         axiosClient.put<ApiResponse<OrderResponse>>(`/api/orders/${orderId}/confirm-received`),
+
+    // Admin
+    adminList: (params?: { q?: string; status?: OrderStatus; page?: number; size?: number }) =>
+        axiosClient.get<ApiResponse<PageResponse<OrderResponse>>>("/api/admin/orders", { params }),
+
+    adminStats: () =>
+        axiosClient.get<ApiResponse<{ total: number; byStatus: Partial<Record<OrderStatus, number>> }>>(
+            "/api/admin/orders/stats"
+        ),
+
+    adminGetById: (orderId: number) =>
+        axiosClient.get<ApiResponse<OrderResponse>>(`/api/admin/orders/${orderId}`),
+
+    adminUpdateStatus: (orderId: number, status: OrderStatus) =>
+        axiosClient.put<ApiResponse<OrderResponse>>(`/api/admin/orders/${orderId}/status`, null, { params: { status } }),
+
+    adminCancel: (orderId: number) =>
+        axiosClient.put<ApiResponse<OrderResponse>>(`/api/admin/orders/${orderId}/cancel`),
 };
 
 export const installmentApi = {

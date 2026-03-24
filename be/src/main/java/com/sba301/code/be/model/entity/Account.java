@@ -27,6 +27,9 @@ public class Account {
     @Column(length = 15)
     private String phoneNumber;
 
+    @Column(length = 255)
+    private String address;
+
     @Column(nullable = false, length = 255)
     private String password;
 
