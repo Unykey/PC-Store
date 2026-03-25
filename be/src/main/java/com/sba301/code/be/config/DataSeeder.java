@@ -10,6 +10,7 @@ import com.sba301.code.be.repository.component.*;
 import lombok.RequiredArgsConstructor;
 import net.datafaker.Faker;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.http.converter.autoconfigure.ClientHttpMessageConvertersCustomizer;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +41,7 @@ public class DataSeeder implements CommandLineRunner {
     private final PcCaseRepository pcCaseRepository;
     private final PsuRepository psuRepository;
     private final StorageRepository storageRepository;
+    private final CoolerRepository coolerRepository;
 
     // Jackson Mapper để đọc JSON
 //    private final ObjectMapper objectMapper;
@@ -48,6 +50,7 @@ public class DataSeeder implements CommandLineRunner {
     private final Faker faker = new Faker();
     private final Random random = new Random();
     private final PasswordEncoder passwordEncoder;
+    private final ClientHttpMessageConvertersCustomizer clientConvertersCustomizer;
 
     @Override
     @Transactional
@@ -77,6 +80,7 @@ public class DataSeeder implements CommandLineRunner {
         seedPcCases();
         seedPsus();
         seedStrorages();
+        seedCooler();
 
         // 4. Seed Products
 //        List<Product> products = seedProducts(categories);
@@ -382,8 +386,8 @@ public class DataSeeder implements CommandLineRunner {
                 Storage[] storageArray = objectMapper.readValue(reader, Storage[].class);
                 List<Storage> storages = List.of(storageArray);
 
-                Category storageCategory = categoryRepository.findByName("SSD")
-                        .orElseThrow(() -> new RuntimeException("Category SSD not found"));
+                Category storageCategory = categoryRepository.findByName("Storage")
+                        .orElseThrow(() -> new RuntimeException("Category Storage not found"));
 
                 storages.forEach(storage -> storage.setCategory(storageCategory));
 
@@ -391,6 +395,27 @@ public class DataSeeder implements CommandLineRunner {
                 System.out.println("✅ Seeded Storages successfully!");
             } catch (IOException e) {
                 System.err.println("❌ Failed to seed Storages: " + e.getMessage());
+            }
+        }
+    }
+
+    private void seedCooler() {
+        if (coolerRepository.count() == 0) {
+            try {
+                InputStream inputStream = TypeReference.class.getResourceAsStream("/data/coolers.json");
+                InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
+                Cooler[] coolerArray = objectMapper.readValue(reader, Cooler[].class);
+                List<Cooler> coolers = List.of(coolerArray);
+
+                Category coolerCategory = categoryRepository.findByName("Cooler")
+                        .orElseThrow(() -> new RuntimeException("Category Cooler not found"));
+
+                coolers.forEach(cooler -> cooler.setCategory(coolerCategory));
+
+                coolerRepository.saveAll(coolers);
+                System.out.println("✅ Seeded Cooler successfully!");
+            } catch (IOException e) {
+                System.err.println("❌ Failed to seed Cooler: " + e.getMessage());
             }
         }
     }

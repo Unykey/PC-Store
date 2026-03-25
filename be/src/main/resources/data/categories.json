@@ -3,7 +3,8 @@
   { "name": "Mainboard", "description": "Bo mạch chủ" },
   { "name": "RAM", "description": "Bộ nhớ trong" },
   { "name": "VGA", "description": "Card màn hình" },
-  { "name": "SSD", "description": "Ổ cứng thể rắn" },
+  { "name": "Storage", "description": "Ổ cứng" },
   { "name": "PSU", "description": "Nguồn máy tính" },
-  { "name": "Case", "description": "Vỏ máy tính" }
+  { "name": "Case", "description": "Vỏ máy tính" },
+  { "name": "Cooler", "description": "Tản nhiệt" }
 ]
