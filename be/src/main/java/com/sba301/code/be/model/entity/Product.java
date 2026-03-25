@@ -46,6 +46,5 @@ public class Product {
     private Set<OrderDetail> orderDetails = new HashSet<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
     private List<ProductSpecification> specifications;
 }
