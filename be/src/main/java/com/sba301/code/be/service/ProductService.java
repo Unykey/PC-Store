@@ -22,4 +22,6 @@ public interface ProductService {
 
     // New: return products considered low stock (stock < 10)
     List<ProductResponse> getLowStockProducts();
+
+    List<ProductResponse> getProductsPaging(int page, int size);
 }

@@ -13,6 +13,7 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import PaymentResultPage from './pages/PaymentResultPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import OrderFailPage from './pages/OrderFailPage';
+import { ComparisonPage } from './pages/ComparisonPage';
 import { AdminDashboard } from './components/AdminDashboard';
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
                     <Route path="/payment/result" element={<PaymentResultPage />} />
                     <Route path="/order-success" element={<OrderSuccessPage />} />
                     <Route path="/order-fail" element={<OrderFailPage />} />
+                    <Route path='/compare/:id' element={<ComparisonPage />} />
                 </Routes>
             </main>
 

@@ -20,6 +20,7 @@ public class DataSeeder implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final ProductSpecificationRepository productSpecificationRepository;
     private final OrderRepository orderRepository;
 
     private final Faker faker = new Faker();
@@ -30,11 +31,13 @@ public class DataSeeder implements CommandLineRunner {
                       RoleRepository roleRepository,
                       CategoryRepository categoryRepository,
                       ProductRepository productRepository,
+                      ProductSpecificationRepository productSpecificationRepository,
                       OrderRepository orderRepository, PasswordEncoder passwordEncoder) {
         this.accountRepository = accountRepository;
         this.roleRepository = roleRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
+        this.productSpecificationRepository = productSpecificationRepository;
         this.orderRepository = orderRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -136,24 +139,53 @@ public class DataSeeder implements CommandLineRunner {
 
         for (int i = 0; i < 50; i++) {
             Product p = new Product();
-            String device = faker.commerce().productName();
-            p.setName(faker.computer().brand() + " " + device + " " + faker.number().digits(4));
 
+            p.setName(faker.computer().brand() + " " + faker.commerce().productName() + " " + i);
             p.setDescription(faker.lorem().paragraph());
-
-            // Dùng BigDecimal cho giá tiền
             p.setPrice(BigDecimal.valueOf(faker.number().numberBetween(1000000, 50000000)));
-
             p.setStockQuantity(faker.number().numberBetween(0, 100));
-            p.setSerialNumber(faker.idNumber().valid());
-//            p.setImageUrl("https://picsum.photos/200/300?random=" + i);
-
-            // Random Category
+            p.setSerialNumber("SN-" + UUID.randomUUID());
             p.setCategory(categories.get(random.nextInt(categories.size())));
 
+            List<ProductSpecification> specs = new ArrayList<>();
+            String cateName = p.getCategory().getName();
+
+            if ("CPU".equalsIgnoreCase(cateName)) {
+                specs.add(createSpec("Cores", faker.number().numberBetween(4, 16) + "", p));
+                specs.add(createSpec("Threads", faker.number().numberBetween(8, 32) + "", p));
+                specs.add(createSpec("Base Clock", faker.number().numberBetween(2, 5) + " GHz", p));
+            } else if ("GPU".equalsIgnoreCase(cateName)) {
+                specs.add(createSpec("VRAM", faker.options().option("6GB", "8GB", "12GB", "16GB"), p));
+                specs.add(createSpec("Bus", faker.options().option("128-bit", "192-bit", "256-bit"), p));
+                specs.add(createSpec("Power", faker.number().numberBetween(100, 350) + "W", p));
+            } else if ("RAM".equalsIgnoreCase(cateName)) {
+                specs.add(createSpec("Capacity", faker.options().option("8GB", "16GB", "32GB"), p));
+                specs.add(createSpec("Type", faker.options().option("DDR4", "DDR5"), p));
+                specs.add(createSpec("Speed", faker.number().numberBetween(2400, 6000) + " MHz", p));
+            } else {
+                int specCount = random.nextInt(3) + 2;
+                for (int j = 0; j < specCount; j++) {
+                    specs.add(createSpec(
+                            faker.commerce().material(),
+                            faker.commerce().productName(),
+                            p
+                    ));
+                }
+            }
+
+            p.setSpecifications(specs);
             products.add(p);
         }
+
         return productRepository.saveAll(products);
+    }
+
+    private ProductSpecification createSpec(String key, String value, Product product) {
+        ProductSpecification spec = new ProductSpecification();
+        spec.setSpecKey(key);
+        spec.setSpecValue(value);
+        spec.setProduct(product);
+        return spec;
     }
 
     private void seedOrders(List<Account> accounts, List<Product> products) {

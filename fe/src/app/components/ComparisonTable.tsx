@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, Fragment, useEffect } from "react";
 import {
   X,
   Plus,
@@ -46,6 +46,12 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
   const [filterBrand, setFilterBrand] = useState("all");
   const [filterPrice, setFilterPrice] = useState("all");
   const [showDifferencesOnly, setShowDifferencesOnly] = useState(false);
+
+  useEffect(() => {
+    if (products.length > 0) {
+      setSelectedProducts([products[0]]);
+    }
+  }, [products]);
 
   // Thêm brand và các thông tin khác cho products
   const enhancedProducts = useMemo(

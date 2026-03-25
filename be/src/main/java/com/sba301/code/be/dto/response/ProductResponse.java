@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -18,4 +19,6 @@ public class ProductResponse {
     private String serialNumber;
     private Long categoryId;
     private String categoryName;
+
+    private List<ProductSpecificationResponse> specifications;
 }

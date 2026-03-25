@@ -1,42 +1,68 @@
 import { useEffect, useState } from "react";
 import { ComparisonTable } from "../components/ComparisonTable";
-import { productApi } from "@/api/productApi";
+import { publicProductApi } from "@/api/productApi";
+import { useParams } from "react-router-dom";
 
 export function ComparisonPage() {
+  const { id } = useParams();
   const [comparisonProducts, setComparisonProducts] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const res = await productApi.getAllProducts();
-      console.log(res.data);
+      if (!id) return;
 
-      const mapped = res.data.map((item: any) => ({
-        model: item.name,
-        image: item.image || "",
+      const mapSpecs = (specs: any[]) => {
+        const result: Record<string, string> = {};
+        specs?.forEach((s) => {
+          result[s.specKey.toLowerCase()] = s.specValue;
+        });
+        return result;
+      };
 
-        processor: item.processor || "",
-        ram: item.ram || "",
-        rom: item.rom || "",
+      const mapProduct = (item: any) => {
+        const specs = mapSpecs(item.specifications);
 
-        display: item.display || "",
-        graphics: item.graphics || "",
-        os: item.os || "",
-        battery: item.battery || "",
+        return {
+          model: item.name,
+          image: null,
 
-        price: item.price?.toString() || "0",
+          processor: specs["processor"] || specs["cores"] || "",
+          ram: specs["ram"] || "",
+          rom: specs["storage"] || "",
 
-        brand: item.name?.split(" ")[0] || "",
-        year: item.year?.toString() || "",
-        weight: item.weight || "",
-        refreshRate: item.refreshRate || "",
-        storageType: item.categoryName || "",
-      }));
+          display: specs["display"] || "",
+          graphics: specs["vram"] || "",
+          os: "",
 
-      setComparisonProducts(mapped);
+          battery: specs["battery"] || "",
+
+          price: item.price?.toString() || "0",
+
+          brand: item.name?.split(" ")[0] || "",
+          year: "",
+          weight: "",
+          refreshRate: "",
+          storageType: item.categoryName || "",
+        };
+      };
+
+      const productRes = await publicProductApi.getProductById(Number(id));
+      const selected = productRes.data.data;
+
+      const selectedMapped = mapProduct(selected);
+
+      const res = await publicProductApi.getAllProducts();
+
+      const mapped = res.data.data.map(mapProduct);
+
+      setComparisonProducts([
+        selectedMapped,
+        ...mapped.filter((p) => p.model !== selected.name),
+      ]);
     };
 
     fetchProducts();
-  }, []);
+  }, [id]);
 
   return (
     <div className="space-y-8">
