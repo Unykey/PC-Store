@@ -13,6 +13,7 @@ export default function PaymentResultPage() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("Đang kiểm tra trạng thái thanh toán...");
+    const [progress, setProgress] = useState(0);
 
     useEffect(() => {
         const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -53,11 +54,14 @@ export default function PaymentResultPage() {
                         success = !!target && target.installmentStatus === "PAID";
                     }
 
+                    const currentProgress = (attempt / maxAttempts) * 100;
+                    setProgress(currentProgress);
+
                     if (success || attempt === maxAttempts) {
                         break;
                     }
 
-                    setMessage("Đang xác nhận giao dịch với MoMo, vui lòng chờ...");
+                    setMessage(`Dang xác nhẫn giao dịch với MoMo... (Lần ${attempt}/${maxAttempts})`);
                     await sleep(1200);
                 }
 
@@ -92,11 +96,42 @@ export default function PaymentResultPage() {
     }, [navigate]);
 
     return (
-        <div className="min-h-screen bg-gray-50 py-10">
-            <div className="mx-auto max-w-2xl rounded-lg border bg-white p-6 text-center shadow-sm">
-                <h1 className="text-2xl font-semibold text-[#0066b3]">Kết quả thanh toán</h1>
-                <p className="mt-3 text-sm text-gray-600">{message}</p>
-                {loading && <div className="mt-4 text-xs text-gray-500">Vui lòng chờ...</div>}
+        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-purple-50 py-10 px-4">
+            <div className="mx-auto max-w-2xl">
+                <div className="rounded-2xl border border-blue-200 bg-white p-8 shadow-lg text-center">
+                    {/* Loading Animation */}
+                    <div className="mb-6">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                            <span className="text-2xl font-bold text-blue-600">...</span>
+                        </div>
+                    </div>
+
+                    <h1 className="text-3xl font-bold text-[#0066b3] mb-2">Đang xác nhận thanh toán</h1>
+                    <p className="text-gray-600 mb-8 text-lg">{message}</p>
+
+                    {/* Progress Bar */}
+                    {loading && (
+                        <div className="mb-6">
+                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
+                                />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2">Vui lòng đừng đóng trang này...</p>
+                        </div>
+                    )}
+
+                    {/* Info Box */}
+                    <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-gray-700">
+                        <p className="font-semibold mb-2">Thông tin:</p>
+                        <ul className="space-y-1 text-left">
+                            <li>Không tắt hoặc reload trang</li>
+                            <li>Tiến trình có thể mất 15-30 giây</li>
+                            <li>Bạn sẽ được chuyển hướng tự động</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     );

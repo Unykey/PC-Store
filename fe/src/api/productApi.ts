@@ -25,41 +25,32 @@ export interface ProductResponse {
   specifications?: ProductSpecificationResponse[];
 }
 
+export interface ProductRequest {
+  name: string;
+  description?: string;
+  price: number;
+  stockQuantity: number;
+  serialNumber?: string;
+  categoryId?: number;
+}
+
 export interface ProductPageResponse {
   items: ProductResponse[];
   total: number;
 }
 
-// ADMIN API
-export const productApi = {
-  getAll: () =>
-    axiosClient.get<ApiResponse<ProductResponse[] | ProductPageResponse>>(
-      "/api/admin/products",
-    ),
-
-  getById: (id: number) =>
-    axiosClient.get<ApiResponse<ProductResponse>>(`/api/admin/products/${id}`),
-
-  create: (payload: Partial<ProductResponse>) =>
-    axiosClient.post<ApiResponse<ProductResponse>>(
-      "/api/admin/products",
-      payload,
-    ),
-
-  update: (id: number, payload: Partial<ProductResponse>) =>
-    axiosClient.put<ApiResponse<ProductResponse>>(
-      `/api/admin/products/${id}`,
-      payload,
-    ),
-
-  delete: (id: number) =>
-    axiosClient.delete<ApiResponse<null>>(`/api/admin/products/${id}`),
-
-  getLowStockList: () =>
-    axiosClient.get<ApiResponse<ProductResponse[]>>(
-      "/api/admin/dashboard/low-stock-list",
-    ),
-};
+// Admin endpoints
+// Note: backend may return either ApiResponse<ProductResponse[]> or ApiResponse<ProductPageResponse>
+export const getAll = () =>
+  axiosClient.get<ApiResponse<ProductResponse[] | ProductPageResponse>>('/api/admin/products');
+export const getById = (id: number) =>
+  axiosClient.get<ApiResponse<ProductResponse>>(`/api/admin/products/${id}`);
+export const create = (payload: ProductRequest) =>
+  axiosClient.post<ApiResponse<ProductResponse>>('/api/admin/products', payload);
+export const update = (id: number, payload: ProductRequest) =>
+  axiosClient.put<ApiResponse<ProductResponse>>(`/api/admin/products/${id}`, payload);
+export const deleteProduct = (id: number) =>
+  axiosClient.delete<ApiResponse<null>>(`/api/admin/products/${id}`);
 
 // PUBLIC API
 export const publicProductApi = {

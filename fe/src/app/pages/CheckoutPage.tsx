@@ -194,10 +194,14 @@ export default function CheckoutPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-gradient-to-b from-orange-50 to-gray-50 py-8">
             <div className="mx-auto max-w-4xl px-4">
-                <h1 className="mb-2 text-3xl font-bold text-[#0066b3]">Thanh Toán</h1>
-                <p className="mb-6 text-sm text-gray-600">Chọn phương thức phù hợp và hoàn tất đơn hàng nhanh chóng.</p>
+                <div className="mb-8 border-b border-gray-200 pb-6">
+                    <h1 className="mb-2 text-4xl font-bold text-[#0066b3]">
+                        Thanh Toán & Trả Góp
+                    </h1>
+                    <p className="text-gray-600">Chọn phương thức thanh toán phù hợp và hoàn tất đơn hàng nhanh chóng.</p>
+                </div>
 
                 <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                     <label className="text-sm">
@@ -227,96 +231,128 @@ export default function CheckoutPage() {
                             <button
                                 onClick={addItem}
                                 type="button"
-                                className="rounded-md bg-[#0066b3] px-3 py-1.5 text-sm text-white hover:bg-[#005091]"
+                                className="rounded-md bg-[#0066b3] px-3 py-1.5 text-sm text-white hover:bg-[#005091] transition"
                             >
-                                + Thêm dòng
+                                + Thêm sản phẩm
                             </button>
                         </div>
 
                         <div className="space-y-3">
-                            {items.map((item, index) => (
-                                <div key={index} className="grid grid-cols-12 gap-2">
-                                    <input
-                                        value={item.productId}
-                                        onChange={(e) => updateItem(index, "productId", Number(e.target.value))}
-                                        type="number"
-                                        min={1}
-                                        className="col-span-5 rounded-md border border-gray-300 px-3 py-2"
-                                        placeholder="Product ID"
-                                    />
-                                    <input
-                                        value={item.quantity}
-                                        onChange={(e) => updateItem(index, "quantity", Number(e.target.value))}
-                                        type="number"
-                                        min={1}
-                                        className="col-span-4 rounded-md border border-gray-300 px-3 py-2"
-                                        placeholder="Số lượng"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeItem(index)}
-                                        disabled={items.length === 1}
-                                        className="col-span-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                                    >
-                                        Xóa
-                                    </button>
-                                </div>
-                            ))}
+                            {items.map((item, index) => {
+                                const productPrice = priceMap[item.productId] || 0;
+                                const itemTotal = productPrice * (item.quantity || 0);
+                                return (
+                                    <div key={index} className="grid grid-cols-12 gap-2 items-end rounded-md border border-gray-200 bg-gray-50 p-3">
+                                        <div className="col-span-5">
+                                            <label className="text-xs text-gray-500 mb-1 block">ID Sản phẩm</label>
+                                            <input
+                                                value={item.productId}
+                                                onChange={(e) => updateItem(index, "productId", Number(e.target.value))}
+                                                type="number"
+                                                min={1}
+                                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                                placeholder="VD: 1"
+                                            />
+                                        </div>
+                                        <div className="col-span-4">
+                                            <label className="text-xs text-gray-500 mb-1 block">Số lượng</label>
+                                            <input
+                                                value={item.quantity}
+                                                onChange={(e) => updateItem(index, "quantity", Number(e.target.value))}
+                                                type="number"
+                                                min={1}
+                                                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                                placeholder="1"
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeItem(index)}
+                                            disabled={items.length === 1}
+                                            className="col-span-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-600 text-sm hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50 transition"
+                                        >
+                                            Xóa
+                                        </button>
+                                        {productPrice > 0 && (
+                                            <div className="col-span-12 text-right text-xs text-gray-600 pt-1 border-t border-gray-200 mt-1">
+                                                <span className="text-[#f37021] font-semibold">{formatVnd(itemTotal)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
                     <div className="mt-6 grid gap-4 md:grid-cols-2">
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                            <h2 className="mb-3 font-semibold text-gray-800">A. Chọn phương thức</h2>
+                        <div className="rounded-lg border border-gray-200 bg-gradient-to-br from-blue-50 to-blue-100 p-5">
+                            <h2 className="mb-4 font-semibold text-gray-800">
+                                Chọn phương thức thanh toán
+                            </h2>
 
-                            <label className="mb-2 flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                            {/* Cash Option */}
+                            <label className="mb-3 flex cursor-pointer items-start gap-3 rounded-lg border-2 border-gray-200 bg-white p-4 hover:border-blue-300 hover:shadow-sm transition">
                                 <input
                                     type="radio"
                                     checked={checkoutMethod === "CASH"}
                                     onChange={() => setCheckoutMethod("CASH")}
+                                    className="mt-1"
                                 />
-                                <div>
-                                    <div className="font-medium">Thanh toán tiền mặt khi nhận hàng</div>
+                                <div className="flex-1">
+                                    <div className="font-semibold text-gray-800">Tiền mặt (COD)</div>
+                                    <div className="text-xs text-gray-600 mt-1">Thanh toán khi nhận hàng</div>
+                                    <div className="text-xs font-medium text-green-600 mt-2">Không phí, không lãi</div>
                                 </div>
                             </label>
 
-                            <label className="mb-2 flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+                            {/* MoMo Wallet Option */}
+                            <label className="mb-3 flex cursor-pointer items-start gap-3 rounded-lg border-2 border-gray-200 bg-white p-4 hover:border-pink-300 hover:shadow-sm transition">
                                 <input
                                     type="radio"
                                     checked={checkoutMethod === "MOMO_WALLET"}
                                     onChange={() => setCheckoutMethod("MOMO_WALLET")}
+                                    className="mt-1"
                                 />
-                                <div>
-                                    <div className="font-medium">Thanh toán qua ví MoMo</div>
+                                <div className="flex-1">
+                                    <div className="font-semibold text-gray-800">Ví MoMo</div>
+                                    <div className="text-xs text-gray-600 mt-1">Thanh toán ngay toàn bộ</div>
+                                    <div className="text-xs font-medium text-blue-600 mt-2">Nhanh gọn, an toàn</div>
                                 </div>
                             </label>
 
-                            <label className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-[#f37021]/40 bg-[#fff7f2] p-3">
+                            {/* Installment Option */}
+                            <label className="flex cursor-pointer items-start gap-3 rounded-lg border-2 border-orange-300 bg-orange-50 p-4 hover:shadow-sm transition">
                                 <input
                                     type="radio"
                                     checked={checkoutMethod === "MOMO_INSTALLMENT"}
                                     onChange={() => setCheckoutMethod("MOMO_INSTALLMENT")}
+                                    className="mt-1"
                                 />
-                                <div>
-                                    <div className="font-medium text-[#d45f1a]">Mua trả góp</div>
+                                <div className="flex-1">
+                                    <div className="font-semibold text-orange-800">Mua trả góp</div>
+                                    <div className="text-xs text-gray-600 mt-1">Chia nhỏ khoản thanh toán</div>
+                                    <div className="text-xs font-medium text-orange-600 mt-2">0% lãi suất | Duyệt nhanh</div>
                                 </div>
                             </label>
 
+                            {/* Installment Terms */}
                             {checkoutMethod === "MOMO_INSTALLMENT" && (
-                                <div className="mt-3 rounded-md border border-[#f37021]/20 bg-white p-3">
-                                    <span className="mb-2 block text-sm font-medium text-gray-700">Chọn kỳ hạn</span>
-                                    <div className="flex gap-2">
+                                <div className="mt-4 rounded-md border border-orange-200 bg-white p-4">
+                                    <span className="mb-3 block text-sm font-semibold text-gray-700">Chọn kỳ hạn thanh toán</span>
+                                    <div className="grid grid-cols-3 gap-2">
                                         {MONTH_OPTIONS.map((month) => (
                                             <button
                                                 key={month}
                                                 type="button"
                                                 onClick={() => setInstallmentMonths(month)}
-                                                className={`rounded-md px-3 py-1.5 text-sm ${installmentMonths === month
-                                                    ? "bg-[#0066b3] text-white"
+                                                className={`rounded-md px-3 py-2.5 text-sm font-medium transition ${installmentMonths === month
+                                                    ? "bg-[#0066b3] text-white shadow-md"
                                                     : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                                                     }`}
                                             >
-                                                {month} tháng
+                                                {month}
+                                                <br />
+                                                <span className="text-xs">tháng</span>
                                             </button>
                                         ))}
                                     </div>
@@ -324,25 +360,44 @@ export default function CheckoutPage() {
                             )}
                         </div>
 
-                        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                            <h2 className="mb-3 font-semibold text-gray-800">B. Tóm tắt</h2>
+                        <div className="rounded-lg border border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 p-5">
+                            <h2 className="mb-4 font-semibold text-gray-800">
+                                Tóm tắt đơn hàng
+                            </h2>
 
-                            <div className="space-y-2 text-sm">
-                                <p>
-                                    Tổng tiền tạm tính: <span className="font-semibold text-[#f37021]">{formatVnd(actualTotal)}</span>
-                                </p>
-                                {priceLoading && <p className="text-xs text-gray-500">Đang cập nhật giá sản phẩm...</p>}
+                            <div className="space-y-3 bg-white rounded-lg p-4">
+                                <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                                    <span className="text-gray-600">Tổng giá trị:</span>
+                                    <span className="text-lg font-bold text-[#f37021]">{formatVnd(actualTotal)}</span>
+                                </div>
+
+                                {priceLoading && (
+                                    <div className="text-xs text-gray-500 text-center py-2">⏳ Đang cập nhật giá...</div>
+                                )}
+
                                 {checkoutMethod === "MOMO_INSTALLMENT" && (
-                                    <p className="rounded-md bg-[#0066b3]/5 px-2 py-1">
-                                        Số tiền cần thanh toán mỗi tháng: <span className="font-semibold text-[#0066b3]">{formatVnd(monthlyPreview)}</span>
-                                    </p>
+                                    <div className="bg-blue-50 rounded-md p-3 border border-blue-200">
+                                        <p className="text-xs text-gray-600 mb-2">Thanh toán hàng tháng:</p>
+                                        <p className="text-2xl font-bold text-[#0066b3]">{formatVnd(monthlyPreview)}</p>
+                                        <p className="text-xs text-gray-500 mt-2">Trong {installmentMonths} tháng • 0% lãi suất</p>
+                                        <div className="mt-3 pt-3 border-t border-blue-200 text-xs text-gray-600 space-y-1">
+                                            <p>Xét duyệt tức thì</p>
+                                            <p>Cam kết 0% lãi suất</p>
+                                            <p>Linh hoạt thanh toán sớm</p>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                         </div>
                     </div>
 
                     {error && (
-                        <p className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</p>
+                        <div className="mt-4 rounded-lg border border-red-300 bg-red-50 p-4">
+                            <div>
+                                <p className="font-semibold text-red-700">Lỗi</p>
+                                <p className="text-sm text-red-600 mt-1">{error}</p>
+                            </div>
+                        </div>
                     )}
 
                     <div className="mt-6 flex flex-wrap gap-3">
@@ -350,16 +405,16 @@ export default function CheckoutPage() {
                             type="button"
                             onClick={handleSubmit}
                             disabled={!canSubmit || submitting}
-                            className="rounded-md bg-[#f37021] px-5 py-2.5 font-medium text-white hover:bg-[#d45f1a] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="rounded-md bg-[#f37021] px-6 py-3 font-semibold text-white hover:bg-[#d45f1a] disabled:cursor-not-allowed disabled:opacity-60 transition shadow-md"
                         >
                             {submitting ? "Đang xử lý..." : getActionText()}
                         </button>
                         <button
                             type="button"
                             onClick={() => navigate("/orders")}
-                            className="rounded-md border border-gray-300 px-5 py-2.5 text-gray-700 hover:bg-gray-100"
+                            className="rounded-md border border-gray-300 px-6 py-3 text-gray-700 hover:bg-gray-100 transition"
                         >
-                            Xem đơn hàng của tôi
+                            Xem đơn hàng
                         </button>
                     </div>
                 </div>

@@ -14,6 +14,7 @@ import PaymentResultPage from './pages/PaymentResultPage';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import OrderFailPage from './pages/OrderFailPage';
 import { ComparisonPage } from './pages/ComparisonPage';
+import { AdminDashboard } from './components/AdminDashboard';
 
 export default function App() {
     return (
@@ -29,6 +30,7 @@ export default function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/build-pc" element={<BuildPC />} />
+                    <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/product/:id" element={<ProductDetailPage />} />
                     <Route path="/checkout" element={<CheckoutPage />} />
                     <Route path="/orders" element={<OrdersPage />} />

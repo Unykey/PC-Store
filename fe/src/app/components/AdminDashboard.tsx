@@ -5,23 +5,17 @@ import {
   Warehouse,
   ShoppingCart,
   Users,
-  Tag,
   Star,
   BarChart3,
-  Settings,
-  AlertTriangle,
 } from 'lucide-react';
 import { DashboardHome } from './admin/DashboardHome';
 import { ProductManagement } from './admin/ProductManagement';
 import { InventoryManagement } from './admin/InventoryManagement';
 import { OrdersManagement } from './admin/OrdersManagement';
 import { CustomerManagement } from './admin/CustomerManagement';
-import { PromotionManagement } from './admin/PromotionManagement';
 import { ReviewManagement } from './admin/ReviewManagement';
 import { ReportsManagement } from './admin/ReportsManagement';
-import { SettingsManagement } from './admin/SettingsManagement';
 import { AdminSidebar } from './admin/AdminSidebar';
-import { LowStockList } from './admin/LowStockList';
 
 type MenuItem = {
   id: string;
@@ -35,11 +29,8 @@ const menuItems: MenuItem[] = [
   { id: 'inventory', label: 'Inventory', icon: Warehouse },
   { id: 'orders', label: 'Orders', icon: ShoppingCart },
   { id: 'customers', label: 'Customers', icon: Users },
-  { id: 'promotions', label: 'Promotions', icon: Tag },
   { id: 'reviews', label: 'Reviews', icon: Star },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
-  { id: 'low-stock', label: 'Low Stock', icon: AlertTriangle },
-  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
 export function AdminDashboard() {
@@ -57,16 +48,10 @@ export function AdminDashboard() {
         return <OrdersManagement />;
       case 'customers':
         return <CustomerManagement />;
-      case 'promotions':
-        return <PromotionManagement />;
       case 'reviews':
         return <ReviewManagement />;
       case 'reports':
         return <ReportsManagement />;
-      case 'low-stock':
-        return <LowStockList />;
-      case 'settings':
-        return <SettingsManagement />;
       default:
         return <DashboardHome />;
     }

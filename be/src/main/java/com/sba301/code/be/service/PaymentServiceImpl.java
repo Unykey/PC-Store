@@ -77,7 +77,9 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalArgumentException("Cash payment endpoint is only for non-installment orders");
         }
 
-        if (order.getOrderStatus() == OrderStatus.CANCELLED || order.getOrderStatus() == OrderStatus.COMPLETED) {
+        if (order.getOrderStatus() == OrderStatus.CANCELLED
+                || order.getOrderStatus() == OrderStatus.COMPLETED
+                || order.getOrderStatus() == OrderStatus.DEFAULTED) {
             throw new RuntimeException("Order is not payable");
         }
 
@@ -128,7 +130,9 @@ public class PaymentServiceImpl implements PaymentService {
             throw new RuntimeException("You cannot pay an order that does not belong to you");
         }
 
-        if (order.getOrderStatus() == OrderStatus.CANCELLED || order.getOrderStatus() == OrderStatus.COMPLETED) {
+        if (order.getOrderStatus() == OrderStatus.CANCELLED
+                || order.getOrderStatus() == OrderStatus.COMPLETED
+                || order.getOrderStatus() == OrderStatus.DEFAULTED) {
             throw new RuntimeException("Order is not payable");
         }
 

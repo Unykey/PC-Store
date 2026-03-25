@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Star, Eye, EyeOff, Trash2, Search } from 'lucide-react';
+import { reviewApi, type AdminReview, type ReviewStatus } from '@/api/reviewApi';
 
 type Review = {
   id: number;
@@ -12,97 +13,93 @@ type Review = {
   helpful: number;
 };
 
-const mockReviews: Review[] = [
-  {
-    id: 1,
-    productName: 'Intel Core i9-13900K',
-    customerName: 'Nguyễn Văn A',
-    rating: 5,
-    comment: 'CPU rất mạnh mẽ, chơi game mượt mà. Đóng gói cẩn thận, giao hàng nhanh. Rất hài lòng!',
-    date: '2026-01-15',
-    status: 'approved',
-    helpful: 12,
-  },
-  {
-    id: 2,
-    productName: 'NVIDIA RTX 4090',
-    customerName: 'Trần Thị B',
-    rating: 5,
-    comment: 'Card đồ họa tuyệt vời! Render video nhanh gấp đôi so với card cũ. Giá hơi cao nhưng xứng đáng.',
-    date: '2026-01-14',
-    status: 'approved',
-    helpful: 8,
-  },
-  {
-    id: 3,
-    productName: 'Samsung 990 Pro 2TB',
-    customerName: 'Lê Văn C',
-    rating: 4,
-    comment: 'SSD tốc độ cao, boot máy rất nhanh. Tuy nhiên giá có vẻ cao hơn so với thị trường một chút.',
-    date: '2026-01-13',
-    status: 'approved',
-    helpful: 5,
-  },
-  {
-    id: 4,
-    productName: 'Corsair Vengeance RGB 32GB',
-    customerName: 'Phạm Thị D',
-    rating: 3,
-    comment: 'RAM hoạt động ổn nhưng đèn RGB không sáng đúng như quảng cáo. Đã liên hệ hỗ trợ.',
-    date: '2026-01-12',
-    status: 'pending',
-    helpful: 2,
-  },
-  {
-    id: 5,
-    productName: 'ASUS ROG Strix B650E',
-    customerName: 'Hoàng Văn E',
-    rating: 5,
-    comment: 'Mainboard chất lượng cao, nhiều tính năng. BIOS dễ dàng overclock. Recommend!',
-    date: '2026-01-11',
-    status: 'approved',
-    helpful: 15,
-  },
-  {
-    id: 6,
-    productName: 'WD Black SN850X 1TB',
-    customerName: 'Võ Thị F',
-    rating: 2,
-    comment: 'Sản phẩm không tốt, nhiệt độ cao bất thường khi sử dụng.',
-    date: '2026-01-10',
-    status: 'pending',
-    helpful: 1,
-  },
-];
+const toUiStatus = (s: ReviewStatus): Review['status'] => {
+  if (s === 'APPROVED') return 'approved';
+  if (s === 'PENDING') return 'pending';
+  return 'hidden';
+};
+
+const toApiStatus = (s: Review['status']): ReviewStatus => {
+  if (s === 'approved') return 'APPROVED';
+  if (s === 'pending') return 'PENDING';
+  return 'HIDDEN';
+};
+
+const mapAdminReview = (r: AdminReview): Review => ({
+  id: r.reviewId,
+  productName: r.productName,
+  customerName: r.customerName,
+  rating: r.rating,
+  comment: r.comment,
+  date: r.reviewDate,
+  status: toUiStatus(r.status),
+  helpful: r.helpfulCount,
+});
 
 export function ReviewManagement() {
-  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const filteredReviews = reviews.filter((review) => {
+  const loadReviews = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const statusParam = filterStatus === 'all' ? undefined : toApiStatus(filterStatus as Review['status']);
+      const res = await reviewApi.adminList({
+        q: searchTerm.trim() || undefined,
+        status: statusParam,
+      });
+      setReviews((res.data.data || []).map(mapAdminReview));
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to load reviews');
+      setReviews([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      loadReviews();
+    }, 250);
+    return () => clearTimeout(t);
+  }, [searchTerm, filterStatus]);
+
+  const filteredReviews = useMemo(() => reviews.filter((review) => {
     const matchesSearch = review.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          review.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          review.comment.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || review.status === filterStatus;
     return matchesSearch && matchesStatus;
-  });
+  }), [reviews, searchTerm, filterStatus]);
 
-  const handleApprove = (id: number) => {
-    setReviews(reviews.map(r => 
-      r.id === id ? { ...r, status: 'approved' as const } : r
-    ));
+  const handleApprove = async (id: number) => {
+    try {
+      await reviewApi.adminUpdateStatus(id, 'APPROVED');
+      setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'approved' } : r)));
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to approve review');
+    }
   };
 
-  const handleHide = (id: number) => {
-    setReviews(reviews.map(r => 
-      r.id === id ? { ...r, status: 'hidden' as const } : r
-    ));
+  const handleHide = async (id: number) => {
+    try {
+      await reviewApi.adminUpdateStatus(id, 'HIDDEN');
+      setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'hidden' } : r)));
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to hide review');
+    }
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Are you sure you want to delete this review?')) {
-      setReviews(reviews.filter(r => r.id !== id));
+  const handleDelete = async (id: number) => {
+    try {
+      await reviewApi.adminDelete(id);
+      setReviews((prev) => prev.filter((r) => r.id !== id));
+    } catch (e: any) {
+      setError(e?.response?.data?.message || 'Failed to delete review');
     }
   };
 
@@ -180,6 +177,8 @@ export function ReviewManagement() {
 
       {/* Reviews List */}
       <div className="space-y-4">
+        {loading && <div className="bg-white rounded-lg shadow p-4 text-sm text-gray-600">Loading reviews...</div>}
+        {!loading && error && <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">{error}</div>}
         {filteredReviews.map((review) => (
           <div key={review.id} className="bg-white rounded-lg shadow overflow-hidden">
             <div className="p-6">
