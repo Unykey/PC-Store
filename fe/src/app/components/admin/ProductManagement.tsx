@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Search, Edit, Trash2, Eye, Upload } from 'lucide-react';
-import { getAll, deleteProduct } from '@/api/productApi';
+import { productApi } from "@/api/productApi";
 import type { ProductResponse } from '@/api/productApi';
 
 type Product = ProductResponse & {
@@ -25,7 +25,7 @@ export function ProductManagement() {
       setLoading(true);
       setError('');
       try {
-        const res = await getAll();
+        const res = await productApi.getAll();
         // Backend may return either ApiResponse<ProductResponse[]> or
         // ApiResponse<ProductPageResponse> where data.items is the array.
         const payload: unknown = res?.data?.data;
@@ -63,7 +63,7 @@ export function ProductManagement() {
   const handleDelete = async (id: number) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
-      await deleteProduct(id);
+      await productApi.delete(id);
       setProducts((prev) => prev.filter((p) => p.productId !== id));
     } catch (err) {
       const maybeErr = err as { response?: { data?: { message?: string } } } | undefined;

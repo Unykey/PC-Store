@@ -1,35 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="d6af5d36-79e1-47e6-8f86-846524f61e93" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/BeApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/BeApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/config/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/controller/OrderController.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/controller/OrderController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/dto/request/OrderCreateRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/dto/request/OrderCreateRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/dto/response/InstallmentResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/dto/response/InstallmentResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/dto/response/OrderResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/dto/response/OrderResponse.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/model/entity/Installment.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/model/entity/Installment.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/model/entity/Order.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/model/entity/Order.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/model/enums/InstallmentProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/model/enums/InstallmentProvider.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/model/enums/OrderStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/model/enums/OrderStatus.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/repository/InstallmentRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/repository/InstallmentRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/service/InstallmentServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/service/InstallmentServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/service/OrderService.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/service/OrderService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/service/OrderServiceImpl.java" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/java/com/sba301/code/be/service/OrderServiceImpl.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/be/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/be/src/main/resources/application.properties" afterDir="false" />
-    </list>
+    <list default="true" id="d6af5d36-79e1-47e6-8f86-846524f61e93" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_D:/FPTU/7.Spring26/SBA/Lam.Lec/PC-Store" value="3BCZ5NuqFN6j4Bq2dEkfRhEDMoh" />
+    </persistenceIdMap>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "customColor": "",
-  "associatedIndex": 3
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 3
+}</component>
   <component name="ProjectId" id="3BCZ5NuqFN6j4Bq2dEkfRhEDMoh" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -40,7 +29,8 @@
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "feature/installment-tragop",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
     "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
   }
@@ -61,7 +51,19 @@
       <option name="presentableId" value="Default" />
       <updated>1773994830270</updated>
       <workItem from="1773994832696" duration="19000" />
+      <workItem from="1774232008202" duration="20000" />
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>
