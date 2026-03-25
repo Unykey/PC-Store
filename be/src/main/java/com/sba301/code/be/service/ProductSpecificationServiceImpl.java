@@ -1,5 +1,7 @@
 package com.sba301.code.be.service;
 
+import com.sba301.code.be.dto.request.ProductSpecificationRequest;
+import com.sba301.code.be.dto.response.ProductSpecificationResponse;
 import com.sba301.code.be.model.entity.Product;
 import com.sba301.code.be.model.entity.ProductSpecification;
 import com.sba301.code.be.repository.ProductRepository;
@@ -8,6 +10,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -16,39 +19,59 @@ public class ProductSpecificationServiceImpl implements ProductSpecificationServ
     private final ProductSpecificationRepository specRepository;
     private final ProductRepository productRepository;
 
-    @Override
-    public List<ProductSpecification> findAll() {
-        return specRepository.findAll();
+    private ProductSpecificationResponse toResponse(ProductSpecification spec) {
+        ProductSpecificationResponse res = new ProductSpecificationResponse();
+        res.setProductSpecificationId(spec.getProductSpecificationId());
+        res.setSpecKey(spec.getSpecKey());
+        res.setSpecValue(spec.getSpecValue());
+        res.setProductId(spec.getProduct().getProductId());
+        return res;
     }
 
     @Override
-    public ProductSpecification findById(Long id) {
-        return specRepository.findById(id).orElse(null);
+    public List<ProductSpecificationResponse> getAll() {
+        return specRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<ProductSpecification> findByProductId(Long productId) {
-        return specRepository.findByProduct_ProductId(productId);
+    public ProductSpecificationResponse getById(Long id) {
+        ProductSpecification spec = specRepository.findById(id).orElse(null);
+        return spec == null ? null : toResponse(spec);
     }
 
     @Override
-    public ProductSpecification create(Long productId, ProductSpecification spec) {
-        Product product = productRepository.findById(productId).orElse(null);
+    public List<ProductSpecificationResponse> getByProductId(Long productId) {
+        return specRepository.findByProduct_ProductId(productId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public ProductSpecificationResponse create(ProductSpecificationRequest request) {
+        Product product = productRepository.findById(request.getProductId()).orElse(null);
         if (product == null) return null;
 
+        ProductSpecification spec = new ProductSpecification();
+        spec.setSpecKey(request.getSpecKey());
+        spec.setSpecValue(request.getSpecValue());
         spec.setProduct(product);
-        return specRepository.save(spec);
+
+        return toResponse(specRepository.save(spec));
     }
 
     @Override
-    public ProductSpecification update(Long id, ProductSpecification newSpec) {
-        ProductSpecification old = findById(id);
+    public ProductSpecificationResponse update(Long id, ProductSpecificationRequest request) {
+        ProductSpecification old = specRepository.findById(id).orElse(null);
         if (old == null) return null;
 
-        old.setSpecKey(newSpec.getSpecKey());
-        old.setSpecValue(newSpec.getSpecValue());
+        old.setSpecKey(request.getSpecKey());
+        old.setSpecValue(request.getSpecValue());
 
-        return specRepository.save(old);
+        return toResponse(specRepository.save(old));
     }
 
     @Override

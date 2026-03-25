@@ -10,12 +10,6 @@ export function Header(_: HeaderProps) {
     const navigate = useNavigate();
 
     const quickLinks = [
-        { name: 'iPhone 17', path: '#' }, // Để tạm # do chưa có trang
-        { name: 'MacBook Air M4', path: '#' },
-        { name: 'Laptop', path: '#' },
-        { name: 'Laptop RTX 50 series', path: '#' },
-        { name: 'Màn Hình', path: '#' },
-        { name: 'VGA', path: '#' },
         { name: 'Build PC', path: '/build-pc' },
         { name: 'Đơn hàng', path: '/orders' },
         { name: 'Lịch trả góp', path: '/my-installments' }

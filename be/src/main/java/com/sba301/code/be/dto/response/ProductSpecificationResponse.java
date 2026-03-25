@@ -11,4 +11,5 @@ public class ProductSpecificationResponse {
     private Long productSpecificationId;
     private String specKey;
     private String specValue;
+    private Long productId;
 }
