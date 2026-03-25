@@ -3,12 +3,17 @@ import type { TooltipProps } from 'recharts';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Download, TrendingUp, TrendingDown } from 'lucide-react';
 import { reportsApi } from '@/api/reportsApi';
-import { installmentApi, type AdminInstallmentPaymentResponse } from '@/api/orderApi';
+import {
+  installmentApi,
+  type AdminInstallmentPaymentResponse,
+  type AdminInstallmentMonitoringSummaryResponse,
+  type AdminInstallmentContractResponse,
+} from '@/api/orderApi';
 
 const COLORS = ['#f37021', '#ff8c42', '#ffa500', '#ffb84d', '#ffc966'];
 
 export function ReportsManagement() {
-  const [reportType, setReportType] = useState<'sales' | 'products' | 'customers'>('sales');
+  const [reportType, setReportType] = useState<'sales' | 'products' | 'customers' | 'installments'>('sales');
   const [loading, setLoading] = useState(false);
   const [months] = useState(6);
 
@@ -27,6 +32,11 @@ export function ReportsManagement() {
   const [paidMonth, setPaidMonth] = useState(now.getMonth() + 1);
   const [paidYear, setPaidYear] = useState(now.getFullYear());
   const [paidInstallments, setPaidInstallments] = useState<AdminInstallmentPaymentResponse[]>([]);
+  const [contractState, setContractState] = useState<'ALL' | 'ACTIVE' | 'OVERDUE' | 'DEFAULTED' | 'CLOSED'>('ALL');
+  const [contractSearch, setContractSearch] = useState('');
+  const [monitoringLoading, setMonitoringLoading] = useState(false);
+  const [monitoringSummary, setMonitoringSummary] = useState<AdminInstallmentMonitoringSummaryResponse | null>(null);
+  const [contractRows, setContractRows] = useState<AdminInstallmentContractResponse[]>([]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
@@ -86,11 +96,11 @@ export function ReportsManagement() {
         setCustomerKpis(
           ci
             ? {
-                totalCustomers: Number(ci.totalCustomers || 0),
-                newCustomers: Number(ci.newCustomers || 0),
-                returningCustomers: Number(ci.returningCustomers || 0),
-                avgCustomerValue: Number(ci.avgCustomerValue || 0),
-              }
+              totalCustomers: Number(ci.totalCustomers || 0),
+              newCustomers: Number(ci.newCustomers || 0),
+              returningCustomers: Number(ci.returningCustomers || 0),
+              avgCustomerValue: Number(ci.avgCustomerValue || 0),
+            }
             : null,
         );
       } catch (e) {
@@ -124,6 +134,35 @@ export function ReportsManagement() {
       cancelled = true;
     };
   }, [paidMonth, paidYear]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (reportType !== 'installments') return;
+      try {
+        setMonitoringLoading(true);
+        const [summaryRes, contractsRes] = await Promise.all([
+          installmentApi.adminGetMonitoringSummary({ month: paidMonth, year: paidYear }),
+          installmentApi.adminGetContracts({ q: contractSearch.trim() || undefined, contractState }),
+        ]);
+        if (cancelled) return;
+        setMonitoringSummary(summaryRes.data.data || null);
+        setContractRows(contractsRes.data.data || []);
+      } catch (e) {
+        if (!cancelled) {
+          console.error('Failed to load installment monitoring', e);
+          setMonitoringSummary(null);
+          setContractRows([]);
+        }
+      } finally {
+        if (!cancelled) setMonitoringLoading(false);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [reportType, paidMonth, paidYear, contractSearch, contractState]);
 
   const categoryData = useMemo(() => {
     const total = categoryRevenue.reduce((sum, c) => sum + c.revenue, 0);
@@ -165,6 +204,40 @@ export function ReportsManagement() {
 
   const handleExportReport = () => {
     const stamp = new Date().toISOString().slice(0, 10);
+
+    if (reportType === 'installments') {
+      const rows: Array<Array<string | number>> = [
+        ['Report Type', 'Installment Monitoring'],
+        ['Month', paidMonth],
+        ['Year', paidYear],
+        ['Total Contracts', monitoringSummary?.totalContracts ?? 0],
+        ['Active Contracts', monitoringSummary?.activeContracts ?? 0],
+        ['Overdue Contracts', monitoringSummary?.overdueContracts ?? 0],
+        ['Defaulted Contracts', monitoringSummary?.defaultedContracts ?? 0],
+        ['Collection Rate (%)', monitoringSummary?.collectionRate ?? 0],
+        ['Total Outstanding', monitoringSummary?.totalOutstanding ?? 0],
+        ['Overdue Outstanding', monitoringSummary?.overdueOutstanding ?? 0],
+        ['Collected This Month', monitoringSummary?.collectedThisMonth ?? 0],
+        [],
+        ['Contracts'],
+        ['OrderId', 'Customer', 'Phone', 'Status', 'Risk', 'PaidMonths', 'OverdueMonths', 'PaidAmount', 'RemainingAmount', 'NextDueDate', 'NextDueAmount'],
+        ...contractRows.map((r) => [
+          r.orderId,
+          r.customerName || '',
+          r.customerPhone || '',
+          r.orderStatus,
+          r.riskLevel || '',
+          r.paidMonths ?? 0,
+          r.overdueMonths ?? 0,
+          r.paidAmount ?? 0,
+          r.remainingAmount ?? 0,
+          r.nextDueDate || '',
+          r.nextDueAmount ?? 0,
+        ]),
+      ];
+      downloadCsv(`installment-monitoring-${stamp}.csv`, rows);
+      return;
+    }
 
     if (reportType === 'sales') {
       const totalRevenue = salesData.reduce((s, p) => s + p.sales, 0);
@@ -229,33 +302,39 @@ export function ReportsManagement() {
         <div className="flex gap-2">
           <button
             onClick={() => setReportType('sales')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              reportType === 'sales'
-                ? 'bg-[#f37021] text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 rounded-lg transition-colors ${reportType === 'sales'
+              ? 'bg-[#f37021] text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
           >
             Sales Report
           </button>
           <button
             onClick={() => setReportType('products')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              reportType === 'products'
-                ? 'bg-[#f37021] text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 rounded-lg transition-colors ${reportType === 'products'
+              ? 'bg-[#f37021] text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
           >
             Product Performance
           </button>
           <button
             onClick={() => setReportType('customers')}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              reportType === 'customers'
-                ? 'bg-[#f37021] text-white'
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+            className={`px-4 py-2 rounded-lg transition-colors ${reportType === 'customers'
+              ? 'bg-[#f37021] text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
           >
             Customer Insights
+          </button>
+          <button
+            onClick={() => setReportType('installments')}
+            className={`px-4 py-2 rounded-lg transition-colors ${reportType === 'installments'
+              ? 'bg-[#f37021] text-white'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+          >
+            Installment Monitoring
           </button>
         </div>
         <button
@@ -298,11 +377,11 @@ export function ReportsManagement() {
                 {loading
                   ? '...'
                   : (() => {
-                      const totalSales = salesData.reduce((s, p) => s + p.sales, 0);
-                      const totalOrders = salesData.reduce((s, p) => s + p.orders, 0);
-                      const avg = totalOrders > 0 ? totalSales / totalOrders : 0;
-                      return `₫ ${formatCompactPrice(avg)}`;
-                    })()}
+                    const totalSales = salesData.reduce((s, p) => s + p.sales, 0);
+                    const totalOrders = salesData.reduce((s, p) => s + p.orders, 0);
+                    const avg = totalOrders > 0 ? totalSales / totalOrders : 0;
+                    return `₫ ${formatCompactPrice(avg)}`;
+                  })()}
               </p>
               <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
                 <TrendingUp className="w-4 h-4" />
@@ -423,9 +502,8 @@ export function ReportsManagement() {
                         {formatPrice(product.revenue)}
                       </td>
                       <td className="px-6 py-4">
-                        <div className={`flex items-center gap-1 ${
-                          product.growth > 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                        <div className={`flex items-center gap-1 ${product.growth > 0 ? 'text-green-600' : 'text-red-600'
+                          }`}>
                           {product.growth > 0 ? (
                             <TrendingUp className="w-4 h-4" />
                           ) : (
@@ -578,6 +656,131 @@ export function ReportsManagement() {
                     <tr>
                       <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
                         No paid installments for selected month.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Installment Monitoring */}
+      {reportType === 'installments' && (
+        <>
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+              <h3 className="text-lg font-semibold text-gray-900">Installment Portfolio Monitoring</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={paidMonth}
+                  onChange={(e) => setPaidMonth(Number(e.target.value))}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  {Array.from({ length: 12 }).map((_, idx) => (
+                    <option key={idx + 1} value={idx + 1}>{idx + 1}</option>
+                  ))}
+                </select>
+                <select
+                  value={paidYear}
+                  onChange={(e) => setPaidYear(Number(e.target.value))}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  {[now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2].map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+                <select
+                  value={contractState}
+                  onChange={(e) => setContractState(e.target.value as 'ALL' | 'ACTIVE' | 'OVERDUE' | 'DEFAULTED' | 'CLOSED')}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                >
+                  <option value="ALL">All Contracts</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="OVERDUE">Overdue</option>
+                  <option value="DEFAULTED">Defaulted</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+                <input
+                  value={contractSearch}
+                  onChange={(e) => setContractSearch(e.target.value)}
+                  placeholder="Search order/customer"
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm min-w-[220px]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-sm text-gray-600 mb-1">Total Contracts</p>
+              <p className="text-2xl font-bold text-gray-900">{monitoringLoading ? '...' : (monitoringSummary?.totalContracts ?? 0)}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-sm text-gray-600 mb-1">Overdue Contracts</p>
+              <p className="text-2xl font-bold text-amber-600">{monitoringLoading ? '...' : (monitoringSummary?.overdueContracts ?? 0)}</p>
+              <p className="text-xs text-gray-500 mt-2">Overdue Outstanding: {formatPrice(Number(monitoringSummary?.overdueOutstanding || 0))}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-sm text-gray-600 mb-1">Defaulted Contracts</p>
+              <p className="text-2xl font-bold text-rose-600">{monitoringLoading ? '...' : (monitoringSummary?.defaultedContracts ?? 0)}</p>
+              <p className="text-xs text-gray-500 mt-2">Collection Rate: {Number(monitoringSummary?.collectionRate || 0).toFixed(2)}%</p>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-sm text-gray-600 mb-1">Collected This Month</p>
+              <p className="text-2xl font-bold text-emerald-600">{monitoringLoading ? '...' : formatPrice(Number(monitoringSummary?.collectedThisMonth || 0))}</p>
+              <p className="text-xs text-gray-500 mt-2">Total Outstanding: {formatPrice(Number(monitoringSummary?.totalOutstanding || 0))}</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Installment Contracts</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Order</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Risk</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Paid/Total</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Overdue</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Remaining</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Next Due</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {contractRows.map((row) => (
+                    <tr key={row.orderId} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-semibold text-gray-900">#{row.orderId}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <p className="font-medium text-gray-900">{row.customerName || '-'}</p>
+                        <p className="text-gray-500">{row.customerPhone || row.customerEmail || '-'}</p>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{row.orderStatus}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${row.riskLevel === 'HIGH'
+                            ? 'bg-rose-100 text-rose-700'
+                            : row.riskLevel === 'MEDIUM'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                          {row.riskLevel || 'LOW'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{row.paidMonths ?? 0}/{row.totalMonths ?? 0}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{row.overdueMonths ?? 0}</td>
+                      <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">{formatPrice(row.remainingAmount || 0)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {row.nextDueDate ? `${new Date(row.nextDueDate).toLocaleDateString('vi-VN')} - ${formatPrice(row.nextDueAmount || 0)}` : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                  {!monitoringLoading && contractRows.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">
+                        No contracts match current filters.
                       </td>
                     </tr>
                   )}

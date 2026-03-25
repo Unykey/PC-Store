@@ -17,8 +17,8 @@ export function Header(_: HeaderProps) {
         { name: 'Màn Hình', path: '#' },
         { name: 'VGA', path: '#' },
         { name: 'Build PC', path: '/build-pc' },
-        { name: 'Đơn hàng (demo nhanh)', path: '/orders' },
-        { name: 'Lịch trả góp (demo nhanh)', path: '/my-installments' }
+        { name: 'Đơn hàng', path: '/orders' },
+        { name: 'Lịch trả góp', path: '/my-installments' }
     ];
 
     return (

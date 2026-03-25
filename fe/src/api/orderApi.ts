@@ -6,7 +6,7 @@ export type InstallmentProvider = "MOMO";
 
 export type InstallmentStatus = "PENDING" | "PAID" | "OVERDUE";
 
-export type OrderStatus = "PENDING" | "CONFIRMED" | "SHIPPING" | "DELIVERED" | "COMPLETED" | "CANCELLED";
+export type OrderStatus = "PENDING" | "CONFIRMED" | "SHIPPING" | "DELIVERED" | "COMPLETED" | "DEFAULTED" | "CANCELLED";
 
 export interface ApiResponse<T> {
     status: number;
@@ -67,6 +67,36 @@ export interface AdminInstallmentPaymentResponse {
     customerName: string;
     customerEmail?: string;
     customerPhone?: string;
+}
+
+export interface AdminInstallmentMonitoringSummaryResponse {
+    totalContracts: number;
+    activeContracts: number;
+    overdueContracts: number;
+    defaultedContracts: number;
+    totalOutstanding: number;
+    overdueOutstanding: number;
+    collectedThisMonth: number;
+    collectionRate: number;
+}
+
+export interface AdminInstallmentContractResponse {
+    orderId: number;
+    accountId: number;
+    customerName?: string;
+    customerEmail?: string;
+    customerPhone?: string;
+    orderStatus: OrderStatus;
+    totalMonths?: number;
+    paidMonths?: number;
+    overdueMonths?: number;
+    totalAmount: number;
+    paidAmount: number;
+    remainingAmount: number;
+    nextDueDate?: string;
+    nextDueAmount?: number;
+    lastPaidDate?: string;
+    riskLevel?: "LOW" | "MEDIUM" | "HIGH";
 }
 
 export interface OrderDetailItemResponse {
@@ -160,6 +190,9 @@ export const orderApi = {
     adminUpdateStatus: (orderId: number, status: OrderStatus) =>
         axiosClient.put<ApiResponse<OrderResponse>>(`/api/admin/orders/${orderId}/status`, null, { params: { status } }),
 
+    cancelInstallment: (orderId: number) =>
+        axiosClient.put<ApiResponse<OrderResponse>>(`/api/orders/${orderId}/cancel-installment`),
+
     adminCancel: (orderId: number) =>
         axiosClient.put<ApiResponse<OrderResponse>>(`/api/admin/orders/${orderId}/cancel`),
 };
@@ -176,6 +209,12 @@ export const installmentApi = {
 
     adminGetPaidInstallments: (params?: { month?: number; year?: number }) =>
         axiosClient.get<ApiResponse<AdminInstallmentPaymentResponse[]>>("/api/installments/admin/paid", { params }),
+
+    adminGetMonitoringSummary: (params?: { month?: number; year?: number }) =>
+        axiosClient.get<ApiResponse<AdminInstallmentMonitoringSummaryResponse>>("/api/installments/admin/monitoring/summary", { params }),
+
+    adminGetContracts: (params?: { q?: string; contractState?: "ALL" | "ACTIVE" | "OVERDUE" | "DEFAULTED" | "CLOSED" }) =>
+        axiosClient.get<ApiResponse<AdminInstallmentContractResponse[]>>("/api/installments/admin/contracts", { params }),
 };
 
 export const paymentApi = {

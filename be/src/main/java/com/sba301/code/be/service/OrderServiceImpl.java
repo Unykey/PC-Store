@@ -214,6 +214,54 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse cancelInstallmentOrder(Long orderId, Long accountId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (!order.getAccount().getAccountId().equals(accountId)) {
+            throw new RuntimeException("Bạn không có quyền hủy đơn hàng này");
+        }
+
+        if (order.getPaymentType() != PaymentType.INSTALLMENT) {
+            throw new RuntimeException("Đây không phải đơn hàng trả góp");
+        }
+
+        if (order.getOrderStatus() == OrderStatus.CANCELLED || order.getOrderStatus() == OrderStatus.DEFAULTED) {
+            return mapToResponse(order);
+        }
+
+        if (order.getOrderStatus() == OrderStatus.COMPLETED) {
+            throw new RuntimeException("Đơn hàng đã hoàn tất, không thể thay đổi trạng thái trả góp");
+        }
+
+        boolean hasPaidInstallment = order.getInstallments() != null
+                && order.getInstallments().stream().anyMatch(i -> i.getInstallmentStatus() == InstallmentStatus.PAID);
+
+        // Path A: clean cancellation when customer has not paid any installment yet.
+        if (!hasPaidInstallment
+                && (order.getOrderStatus() == OrderStatus.PENDING || order.getOrderStatus() == OrderStatus.CONFIRMED)) {
+            order.setOrderStatus(OrderStatus.CANCELLED);
+
+            for (OrderDetail detail : order.getOrderDetails()) {
+                Product p = detail.getProduct();
+                p.setStockQuantity(p.getStockQuantity() + detail.getQuantity());
+                productRepository.save(p);
+            }
+
+            return mapToResponse(orderRepository.save(order));
+        }
+
+        // Path B: production hardship scenario (customer cannot continue paying).
+        // Keep inventory unchanged because goods may already be in customer possession.
+        // Mark contract as DEFAULTED to stop normal payment flow and signal debt
+        // handling.
+        order.setOrderStatus(OrderStatus.DEFAULTED);
+
+        return mapToResponse(orderRepository.save(order));
+    }
+
+    @Override
     public OrderResponse confirmReceived(Long orderId, Long accountId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
@@ -269,11 +317,11 @@ public class OrderServiceImpl implements OrderService {
 
         Page<Order> result = orderRepository.findAll(
                 spec,
-                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "orderDate"))
-        );
+                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "orderDate")));
 
         List<OrderResponse> items = result.getContent().stream().map(this::mapToResponse).toList();
-        return new PageResponse<>(items, result.getNumber(), result.getSize(), result.getTotalElements(), result.getTotalPages());
+        return new PageResponse<>(items, result.getNumber(), result.getSize(), result.getTotalElements(),
+                result.getTotalPages());
     }
 
     @Override
