@@ -10,4 +10,5 @@ import lombok.Setter;
 public class ProductSpecificationRequest {
     private String specKey;
     private String specValue;
+    private Long productId;
 }
