@@ -169,6 +169,7 @@ public class ProductServiceImpl implements ProductService {
         res.setPrice(product.getPrice());
         res.setStockQuantity(product.getStockQuantity());
         res.setSerialNumber(product.getSerialNumber());
+        res.setImage(product.getImage());
 
         if (product.getCategory() != null) {
             res.setCategoryId(product.getCategory().getCategoryId());
@@ -197,6 +198,7 @@ public class ProductServiceImpl implements ProductService {
         entity.setPrice(req.getPrice());
         entity.setStockQuantity(req.getStockQuantity());
         entity.setSerialNumber(req.getSerialNumber());
+        entity.setImage(req.getImage());
         if (req.getCategoryId() != null) {
             Category category = categoryRepository.findById(req.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id " + req.getCategoryId()));

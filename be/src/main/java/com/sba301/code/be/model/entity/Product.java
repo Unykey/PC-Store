@@ -1,6 +1,5 @@
 package com.sba301.code.be.model.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import lombok.*;
@@ -38,6 +37,9 @@ public class Product {
     @Column(unique = true)
     private String serialNumber;
 
+    @Column(length = 255)
+    private String image;
+
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
@@ -46,6 +48,5 @@ public class Product {
     private Set<OrderDetail> orderDetails = new HashSet<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
     private List<ProductSpecification> specifications;
 }

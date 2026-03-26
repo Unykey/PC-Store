@@ -17,6 +17,7 @@ public class ProductResponse {
     private BigDecimal price;
     private int stockQuantity;
     private String serialNumber;
+    private String image;
     private Long categoryId;
     private String categoryName;
 
