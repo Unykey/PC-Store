@@ -9,7 +9,6 @@ import com.sba301.code.be.repository.AccountRepository;
 import com.sba301.code.be.repository.RoleRepository;
 import com.sba301.code.be.security.JwtTokenProvider;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -36,17 +35,32 @@ public class AccountServiceImpl implements AccountService{
 
     @Override
     public Account getAccountById(Long accountId) {
-        return accountRepository.findById(accountId).get();
+        return accountRepository.findById(accountId).orElseThrow(() -> new RuntimeException("Account not found"));
     }
 
     @Override
     public Account createAccount(Account account) {
+        if (account.getPassword() != null) {
+            account.setPassword(passwordEncoder.encode(account.getPassword()));
+        }
+        // assign default role if not set
+        if (account.getRole() == null) {
+            Role role = roleRepository.findByRoleName("CUSTOMER")
+                    .orElseThrow(() -> new RuntimeException("Role not found"));
+            account.setRole(role);
+        }
         return accountRepository.save(account);
     }
 
     @Override
     public Account updateAccount(Long accountId, Account account) {
-        return accountRepository.save(account);
+        Account existing = accountRepository.findById(accountId).orElseThrow(() -> new RuntimeException("Account not found"));
+        if (account.getFullName() != null) existing.setFullName(account.getFullName());
+        if (account.getEmail() != null) existing.setEmail(account.getEmail());
+        if (account.getPhoneNumber() != null) existing.setPhoneNumber(account.getPhoneNumber());
+        if (account.getPassword() != null) existing.setPassword(passwordEncoder.encode(account.getPassword()));
+        if (account.getRole() != null) existing.setRole(account.getRole());
+        return accountRepository.save(existing);
     }
 
     @Override
@@ -98,5 +112,23 @@ public class AccountServiceImpl implements AccountService{
         accountRepository.save(account);
 
         return "User registered successfully!";
+    }
+
+    @Override
+    public List<Account> searchAccounts(String query) {
+        if (query == null || query.isBlank()) return List.of();
+        String q = query.trim();
+
+        // numeric id search
+        try {
+            Long id = Long.parseLong(q);
+            return accountRepository.findById(id).map(List::of).orElse(List.of());
+        } catch (NumberFormatException ignored) {}
+
+        String lower = q.toLowerCase();
+        return accountRepository.findAll().stream()
+                .filter(a -> (a.getFullName() != null && a.getFullName().toLowerCase().contains(lower))
+                        || (a.getEmail() != null && a.getEmail().toLowerCase().contains(lower)))
+                .toList();
     }
 }

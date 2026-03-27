@@ -1,6 +1,8 @@
 package com.sba301.code.be.dto.response;
 
+import com.sba301.code.be.model.enums.InstallmentProvider;
 import com.sba301.code.be.model.enums.OrderStatus;
+import com.sba301.code.be.model.enums.PaymentType;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,5 +21,16 @@ public class OrderResponse {
     private BigDecimal totalAmount;
     private Long accountId;
     private String accountName;
+    private String accountEmail;
+    private String accountPhoneNumber;
+    private String shippingAddress;
+    private String note;
     private List<OrderDetailResponse> orderDetails;
+
+    // Installment summary (populated only when paymentType = INSTALLMENT)
+    private PaymentType paymentType;
+    private Integer installmentMonths;
+    private InstallmentProvider installmentProvider;
+    private BigDecimal monthlyAmount;
+    private List<InstallmentResponse> installments;
 }

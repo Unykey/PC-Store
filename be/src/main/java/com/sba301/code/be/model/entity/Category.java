@@ -1,5 +1,6 @@
 package com.sba301.code.be.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sba301.code.be.model.entity.Product;
 import jakarta.persistence.*;
 import lombok.*;
@@ -27,6 +28,7 @@ public class Category {
     private String description;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    @JsonIgnore
     private Set<Product> products = new HashSet<>();
 
     Product addProduct(Product product) {

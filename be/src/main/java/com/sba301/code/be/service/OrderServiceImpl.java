@@ -2,81 +2,165 @@ package com.sba301.code.be.service;
 
 import com.sba301.code.be.dto.request.OrderCreateRequest;
 import com.sba301.code.be.dto.request.OrderItemRequest;
+import com.sba301.code.be.dto.response.AdminOrderStatsResponse;
+import com.sba301.code.be.dto.response.InstallmentResponse;
 import com.sba301.code.be.dto.response.OrderDetailResponse;
 import com.sba301.code.be.dto.response.OrderResponse;
+import com.sba301.code.be.dto.response.PageResponse;
 import com.sba301.code.be.model.entity.*;
+import com.sba301.code.be.model.enums.InstallmentProvider;
+import com.sba301.code.be.model.enums.InstallmentStatus;
 import com.sba301.code.be.model.enums.OrderStatus;
+import com.sba301.code.be.model.enums.PaymentTransactionStatus;
+import com.sba301.code.be.model.enums.PaymentType;
 import com.sba301.code.be.repository.*;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 public class OrderServiceImpl implements OrderService {
+
     private final OrderRepository orderRepository;
     private final AccountRepository accountRepository;
     private final ProductRepository productRepository;
+    private final InstallmentRepository installmentRepository;
+    private final PaymentSettingsService paymentSettingsService;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+
+    private static final List<Integer> ALLOWED_INSTALLMENT_MONTHS = List.of(3, 6, 12, 24);
 
     @Override
-    @Transactional(rollbackFor = Exception.class) // Rollback nếu có lỗi xảy ra
+    @Transactional(rollbackFor = Exception.class)
     public OrderResponse placeOrder(OrderCreateRequest request) {
-        // 1. Tìm người mua
+        // 1. Validate installment parameters early
+        if (request.getPaymentType() == PaymentType.INSTALLMENT) {
+            if (request.getInstallmentMonths() == null) {
+                throw new IllegalArgumentException(
+                        "installmentMonths is required for installment orders.");
+            }
+            if (!ALLOWED_INSTALLMENT_MONTHS.contains(request.getInstallmentMonths())) {
+                throw new IllegalArgumentException("installmentMonths must be one of: " + ALLOWED_INSTALLMENT_MONTHS);
+            }
+            if (request.getInstallmentProvider() != null
+                    && request.getInstallmentProvider() != InstallmentProvider.MOMO) {
+                throw new IllegalArgumentException("Only MOMO installment provider is supported in this project");
+            }
+        }
+
+        // 2. Find buyer
         Account account = accountRepository.findById(request.getAccountId())
                 .orElseThrow(() -> new RuntimeException("Account not found with ID: " + request.getAccountId()));
 
-        // 2. Khởi tạo Order
+        // 3. Build Order
         Order order = new Order();
         order.setAccount(account);
         order.setOrderDate(LocalDateTime.now());
         order.setOrderStatus(OrderStatus.PENDING);
+        order.setPaymentType(request.getPaymentType() != null ? request.getPaymentType() : PaymentType.FULL_PAYMENT);
+        order.setShippingAddress(request.getShippingAddress());
+        order.setNote(request.getNote());
+
+        if (order.getPaymentType() == PaymentType.INSTALLMENT) {
+            order.setInstallmentMonths(request.getInstallmentMonths());
+            order.setInstallmentProvider(InstallmentProvider.MOMO);
+        }
 
         BigDecimal totalAmount = BigDecimal.ZERO;
         Set<OrderDetail> orderDetails = new HashSet<>();
 
-        // 3. Xử lý từng sản phẩm trong giỏ hàng
+        // 4. Process each cart item
         for (OrderItemRequest itemReq : request.getItems()) {
             Product product = productRepository.findById(itemReq.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found with ID: " + itemReq.getProductId()));
 
-            // Check tồn kho
             if (product.getStockQuantity() < itemReq.getQuantity()) {
-                throw new RuntimeException("Product " + product.getName() + " is out of stock (Available: " + product.getStockQuantity() + ")");
+                throw new RuntimeException("Product '" + product.getName() + "' is out of stock (available: "
+                        + product.getStockQuantity() + ")");
             }
 
-            // Trừ tồn kho (Optional: Tùy nghiệp vụ có trừ ngay không)
             product.setStockQuantity(product.getStockQuantity() - itemReq.getQuantity());
             productRepository.save(product);
 
-            // Tạo OrderDetail
             OrderDetail detail = new OrderDetail();
             detail.setOrder(order);
             detail.setProduct(product);
             detail.setQuantity(itemReq.getQuantity());
             detail.setPriceAtPurchase(product.getPrice());
 
-            // Tính tiền: giá * số lượng
-            BigDecimal lineTotal = product.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity()));
-            totalAmount = totalAmount.add(lineTotal);
-
+            totalAmount = totalAmount.add(product.getPrice().multiply(BigDecimal.valueOf(itemReq.getQuantity())));
             orderDetails.add(detail);
         }
 
-        // 4. Set dữ liệu tính toán được vào Order
         order.setTotalAmount(totalAmount);
-        order.setOrderDetails(orderDetails); // Set list chi tiết vào
+        order.setOrderDetails(orderDetails);
 
-        // 5. Lưu xuống DB (Cascade sẽ lưu luôn OrderDetail)
+        // 5. Save order (cascades to OrderDetail)
         Order savedOrder = orderRepository.save(order);
+
+        // 6. Generate installment schedule if applicable
+        if (savedOrder.getPaymentType() == PaymentType.INSTALLMENT) {
+            generateInstallmentSchedule(savedOrder);
+        }
+
         return mapToResponse(savedOrder);
+    }
+
+    /**
+     * Creates one Installment record per month, distributed evenly from the order
+     * date.
+     */
+    private void generateInstallmentSchedule(Order order) {
+        int months = order.getInstallmentMonths();
+        PaymentSettings settings = paymentSettingsService.getOrCreateSettings();
+        BigDecimal monthlyPrincipal = order.getTotalAmount()
+                .divide(BigDecimal.valueOf(months), 2, RoundingMode.HALF_UP);
+        BigDecimal monthlyInterest = order.getTotalAmount()
+                .multiply(settings.getMonthlyInstallmentRate())
+                .setScale(2, RoundingMode.HALF_UP);
+
+        LocalDate startDate = order.getOrderDate().toLocalDate();
+        List<Installment> schedule = new ArrayList<>();
+        BigDecimal distributedPrincipal = BigDecimal.ZERO;
+
+        for (int month = 1; month <= months; month++) {
+            Installment installment = new Installment();
+            installment.setOrder(order);
+            installment.setMonthNumber(month);
+
+            BigDecimal principal = month == months
+                    ? order.getTotalAmount().subtract(distributedPrincipal)
+                    : monthlyPrincipal;
+            distributedPrincipal = distributedPrincipal.add(principal);
+
+            installment.setPrincipalAmount(principal);
+            installment.setInterestAmount(monthlyInterest);
+            installment.setOverdueFee(BigDecimal.ZERO);
+            installment.setAmount(principal.add(monthlyInterest));
+            installment.setDueDate(startDate.plusMonths(month));
+            installment.setInstallmentStatus(InstallmentStatus.PENDING);
+            schedule.add(installment);
+        }
+
+        installmentRepository.saveAll(schedule);
+        order.getInstallments().addAll(schedule);
     }
 
     @Override
@@ -87,15 +171,14 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponse getOrderById(Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
         return mapToResponse(order);
     }
 
     @Override
     public List<OrderResponse> getOrdersByAccountId(Long accountId) {
-        List<Order> orders = orderRepository.findByAccount_AccountId(accountId);
-        // Convert List<Order> -> List<OrderResponse>
-        return orders.stream().map(this::mapToResponse).toList();
+        return orderRepository.findByAccount_AccountId(accountId)
+                .stream().map(this::mapToResponse).toList();
     }
 
     @Override
@@ -103,8 +186,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
         order.setOrderStatus(status);
-        Order savedOrder = orderRepository.save(order);
-        return mapToResponse(savedOrder);
+        return mapToResponse(orderRepository.save(order));
     }
 
     @Override
@@ -112,28 +194,183 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
 
-        // 1. Check quyền: Phải đúng là đơn của người này
         if (!order.getAccount().getAccountId().equals(accountId)) {
             throw new RuntimeException("Bạn không có quyền hủy đơn hàng này");
         }
 
-        // 2. Check trạng thái: Chỉ được hủy khi đang chờ (PENDING)
         if (order.getOrderStatus() != OrderStatus.PENDING) {
             throw new RuntimeException("Đơn hàng đã được duyệt hoặc đang giao, không thể hủy!");
         }
 
-        // 3. Thực hiện hủy
         order.setOrderStatus(OrderStatus.CANCELLED);
 
-        // 4. (Quan trọng) Hoàn lại số lượng tồn kho cho sản phẩm
         for (OrderDetail detail : order.getOrderDetails()) {
             Product p = detail.getProduct();
             p.setStockQuantity(p.getStockQuantity() + detail.getQuantity());
             productRepository.save(p);
         }
 
-        Order saved = orderRepository.save(order);
-        return mapToResponse(saved);
+        return mapToResponse(orderRepository.save(order));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse cancelInstallmentOrder(Long orderId, Long accountId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (!order.getAccount().getAccountId().equals(accountId)) {
+            throw new RuntimeException("Bạn không có quyền hủy đơn hàng này");
+        }
+
+        if (order.getPaymentType() != PaymentType.INSTALLMENT) {
+            throw new RuntimeException("Đây không phải đơn hàng trả góp");
+        }
+
+        if (order.getOrderStatus() == OrderStatus.CANCELLED || order.getOrderStatus() == OrderStatus.DEFAULTED) {
+            return mapToResponse(order);
+        }
+
+        if (order.getOrderStatus() == OrderStatus.COMPLETED) {
+            throw new RuntimeException("Đơn hàng đã hoàn tất, không thể thay đổi trạng thái trả góp");
+        }
+
+        boolean hasPaidInstallment = order.getInstallments() != null
+                && order.getInstallments().stream().anyMatch(i -> i.getInstallmentStatus() == InstallmentStatus.PAID);
+
+        // Path A: clean cancellation when customer has not paid any installment yet.
+        if (!hasPaidInstallment
+                && (order.getOrderStatus() == OrderStatus.PENDING || order.getOrderStatus() == OrderStatus.CONFIRMED)) {
+            order.setOrderStatus(OrderStatus.CANCELLED);
+
+            for (OrderDetail detail : order.getOrderDetails()) {
+                Product p = detail.getProduct();
+                p.setStockQuantity(p.getStockQuantity() + detail.getQuantity());
+                productRepository.save(p);
+            }
+
+            return mapToResponse(orderRepository.save(order));
+        }
+
+        // Path B: production hardship scenario (customer cannot continue paying).
+        // Keep inventory unchanged because goods may already be in customer possession.
+        // Mark contract as DEFAULTED to stop normal payment flow and signal debt
+        // handling.
+        order.setOrderStatus(OrderStatus.DEFAULTED);
+
+        return mapToResponse(orderRepository.save(order));
+    }
+
+    @Override
+    public OrderResponse confirmReceived(Long orderId, Long accountId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (!order.getAccount().getAccountId().equals(accountId)) {
+            throw new RuntimeException("Bạn không có quyền xác nhận đơn hàng này");
+        }
+
+        if (order.getOrderStatus() != OrderStatus.DELIVERED) {
+            throw new RuntimeException("Chỉ có thể xác nhận khi đơn hàng ở trạng thái DELIVERED");
+        }
+
+        if (!isOrderFullyPaid(order)) {
+            throw new RuntimeException("Đơn hàng chưa thanh toán đầy đủ, không thể hoàn tất");
+        }
+
+        order.setOrderStatus(OrderStatus.COMPLETED);
+        return mapToResponse(orderRepository.save(order));
+    }
+
+    @Override
+    public PageResponse<OrderResponse> adminListOrders(String q, OrderStatus status, int page, int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = Math.min(100, Math.max(1, size));
+
+        Specification<Order> spec = (root, query, cb) -> cb.conjunction();
+
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("orderStatus"), status));
+        }
+
+        if (q != null && !q.trim().isEmpty()) {
+            String trimmed = q.trim();
+            spec = spec.and((root, query, cb) -> {
+                String like = "%" + trimmed.toLowerCase() + "%";
+                // Join account to search name/email/phone
+                Join<Order, Account> accountJoin = root.join("account");
+
+                Predicate byName = cb.like(cb.lower(accountJoin.get("fullName")), like);
+                Predicate byEmail = cb.like(cb.lower(accountJoin.get("email")), like);
+                Predicate byPhone = cb.like(cb.lower(accountJoin.get("phoneNumber")), like);
+
+                // If numeric, also allow exact orderId match
+                try {
+                    Long id = Long.parseLong(trimmed);
+                    Predicate byId = cb.equal(root.get("orderId"), id);
+                    return cb.or(byId, byName, byEmail, byPhone);
+                } catch (NumberFormatException ex) {
+                    return cb.or(byName, byEmail, byPhone);
+                }
+            });
+        }
+
+        Page<Order> result = orderRepository.findAll(
+                spec,
+                PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "orderDate")));
+
+        List<OrderResponse> items = result.getContent().stream().map(this::mapToResponse).toList();
+        return new PageResponse<>(items, result.getNumber(), result.getSize(), result.getTotalElements(),
+                result.getTotalPages());
+    }
+
+    @Override
+    public AdminOrderStatsResponse adminGetOrderStats() {
+        AdminOrderStatsResponse stats = new AdminOrderStatsResponse();
+        stats.setTotal(orderRepository.count());
+
+        var byStatus = new EnumMap<OrderStatus, Long>(OrderStatus.class);
+        for (OrderStatus s : OrderStatus.values()) {
+            byStatus.put(s, orderRepository.countByOrderStatus(s));
+        }
+        stats.setByStatus(byStatus);
+        return stats;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public OrderResponse adminCancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            return mapToResponse(order);
+        }
+
+        if (order.getOrderStatus() == OrderStatus.DELIVERED || order.getOrderStatus() == OrderStatus.COMPLETED) {
+            throw new RuntimeException("Không thể hủy đơn hàng đã giao hoặc đã hoàn tất");
+        }
+
+        // Allow admin to cancel pending/confirmed/shipping orders
+        order.setOrderStatus(OrderStatus.CANCELLED);
+
+        for (OrderDetail detail : order.getOrderDetails()) {
+            Product p = detail.getProduct();
+            p.setStockQuantity(p.getStockQuantity() + detail.getQuantity());
+            productRepository.save(p);
+        }
+
+        return mapToResponse(orderRepository.save(order));
+    }
+
+    private boolean isOrderFullyPaid(Order order) {
+        if (order.getPaymentType() == PaymentType.INSTALLMENT) {
+            return installmentRepository.countByOrder_OrderIdAndInstallmentStatusNot(
+                    order.getOrderId(), InstallmentStatus.PAID) == 0;
+        }
+
+        return paymentTransactionRepository.existsByOrder_OrderIdAndInstallmentIsNullAndStatus(
+                order.getOrderId(), PaymentTransactionStatus.SUCCESS);
     }
 
     private OrderResponse mapToResponse(Order order) {
@@ -142,10 +379,15 @@ public class OrderServiceImpl implements OrderService {
         response.setOrderDate(order.getOrderDate());
         response.setOrderStatus(order.getOrderStatus());
         response.setTotalAmount(order.getTotalAmount());
+        response.setPaymentType(order.getPaymentType());
+        response.setShippingAddress(order.getShippingAddress());
+        response.setNote(order.getNote());
 
         if (order.getAccount() != null) {
             response.setAccountId(order.getAccount().getAccountId());
             response.setAccountName(order.getAccount().getFullName());
+            response.setAccountEmail(order.getAccount().getEmail());
+            response.setAccountPhoneNumber(order.getAccount().getPhoneNumber());
         }
 
         if (order.getOrderDetails() != null) {
@@ -159,38 +401,39 @@ public class OrderServiceImpl implements OrderService {
             }).toList();
             response.setOrderDetails(details);
         }
+
+        if (order.getPaymentType() == PaymentType.INSTALLMENT) {
+            response.setInstallmentMonths(order.getInstallmentMonths());
+            response.setInstallmentProvider(order.getInstallmentProvider());
+
+            if (order.getInstallmentMonths() != null && order.getTotalAmount() != null) {
+                response.setMonthlyAmount(order.getTotalAmount()
+                        .divide(BigDecimal.valueOf(order.getInstallmentMonths()), 0, RoundingMode.CEILING));
+            }
+
+            if (order.getInstallments() != null && !order.getInstallments().isEmpty()) {
+                List<InstallmentResponse> installmentResponses = order.getInstallments().stream()
+                        .sorted((a, b) -> Integer.compare(a.getMonthNumber(), b.getMonthNumber()))
+                        .map(i -> {
+                            InstallmentResponse ir = new InstallmentResponse();
+                            ir.setId(i.getId());
+                            ir.setOrderId(order.getOrderId());
+                            ir.setProvider(order.getInstallmentProvider());
+                            ir.setTotalMonths(order.getInstallmentMonths());
+                            ir.setMonthNumber(i.getMonthNumber());
+                            ir.setAmount(i.getAmount());
+                            ir.setPrincipalAmount(i.getPrincipalAmount());
+                            ir.setInterestAmount(i.getInterestAmount());
+                            ir.setOverdueFee(i.getOverdueFee());
+                            ir.setDueDate(i.getDueDate());
+                            ir.setPaidDate(i.getPaidDate());
+                            ir.setInstallmentStatus(i.getInstallmentStatus());
+                            return ir;
+                        }).toList();
+                response.setInstallments(installmentResponses);
+            }
+        }
+
         return response;
-    }
-
-    private Order mapToOrder(OrderResponse response) {
-        Order order = new Order();
-        order.setOrderId(response.getOrderId());
-        order.setOrderDate(response.getOrderDate());
-        order.setOrderStatus(response.getOrderStatus());
-        order.setTotalAmount(response.getTotalAmount());
-
-        if (response.getAccountId() != null) {
-            Account account = new Account();
-            account.setAccountId(response.getAccountId());
-            account.setFullName(response.getAccountName());
-            order.setAccount(account);
-        }
-
-        if (response.getOrderDetails() != null) {
-            Set<OrderDetail> orderDetails = response.getOrderDetails().stream().map(detailRes -> {
-                OrderDetail orderDetail = new OrderDetail();
-                Product product = new Product();
-                product.setProductId(detailRes.getProductId());
-                product.setName(detailRes.getProductName());
-
-                orderDetail.setProduct(product);
-                orderDetail.setQuantity(detailRes.getQuantity());
-                orderDetail.setPriceAtPurchase(detailRes.getPrice());
-                orderDetail.setOrder(order);
-                return orderDetail;
-            }).collect(Collectors.toSet());
-            order.setOrderDetails(orderDetails);
-        }
-        return order;
     }
 }

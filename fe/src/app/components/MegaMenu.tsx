@@ -1,26 +1,7 @@
-import { useState } from 'react';
-import { 
-  Laptop, 
-  Monitor, 
-  Cpu, 
-  HardDrive,
-  Smartphone,
-  Tablet,
-  Watch,
-  Gamepad2,
-  ChevronRight
-} from 'lucide-react';
-
-interface SubItem {
-  name: string;
-  items: string[];
-}
-
-interface Category {
-  icon: any;
-  label: string;
-  subCategories: SubItem[];
-}
+import { useState, useEffect } from "react";
+import { Laptop, Cpu, HardDrive, ChevronRight } from "lucide-react";
+import { categoryApi } from "@/api/categoryApi";
+import publicProductApi from "@/api/productApi";
 
 export function MegaMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -298,85 +279,77 @@ export function MegaMenu() {
       ]
     }
   ];
+  const [categories, setCategories] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const cateRes = await categoryApi.getAll();
+      setCategories(cateRes.data.data);
+
+      const productRes = await publicProductApi.getAllProducts();
+      setProducts(productRes.data.data);
+    };
+    fetchData();
+  }, []);
+
+  const icons = [Laptop, Cpu, HardDrive];
 
   return (
-    <div className="relative" onMouseLeave={() => setIsOpen(false)}> 
-      {/* Trigger Button */}
+    <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        onMouseEnter={() => setIsOpen(true)}
-        className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-[#f37021] transition-colors text-sm"
+        className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-[#f37021] text-sm"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
         <span>Danh mục sản phẩm</span>
       </button>
 
-      {/* Mega Menu Dropdown */}
       {isOpen && (
-        <>
-          {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black/20 z-40"
-            onClick={() => setIsOpen(false)}
-          />
-          
-          {/* Dropdown Content */}
-          <div 
-            className="absolute left-0 top-full mt-1 z-50 shadow-2xl rounded-lg overflow-hidden"
-          >
-            <div className="flex bg-white">
-              {/* Left Categories */}
-              <div className="w-56 bg-gray-50 border-r border-gray-200">
-                {categories.map((category, index) => (
+        <div className="absolute left-0 top-full mt-1 z-50 shadow-2xl rounded-lg overflow-hidden">
+          <div className="flex bg-white">
+            {/* LEFT */}
+            <div className="w-56 bg-gray-50 border-r">
+              {categories.map((c, index) => {
+                const Icon = icons[index % icons.length];
+                return (
                   <button
-                    key={index}
-                    onMouseEnter={() => setActiveCategory(index)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
-                      activeCategory === index 
-                        ? 'bg-white text-[#0066b3] border-r-2 border-[#0066b3]' 
-                        : 'text-gray-700 hover:bg-white hover:text-[#0066b3]'
+                    key={c.categoryId}
+                    onClick={() => setActiveCategory(index)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 ${
+                      activeCategory === index ? "bg-white text-[#0066b3]" : ""
                     }`}
                   >
-                    <category.icon size={18} className="flex-shrink-0" />
-                    <span className="flex-1 text-sm">{category.label}</span>
-                    <ChevronRight size={16} className="flex-shrink-0" />
+                    <Icon size={18} />
+                    <span className="flex-1 text-sm">{c.name}</span>
+                    <ChevronRight size={16} />
                   </button>
-                ))}
-              </div>
+                );
+              })}
+            </div>
 
-              {/* Right Sub-categories */}
-              <div className="w-[700px] max-h-[500px] overflow-y-auto p-6 bg-white">
-                <div className="grid grid-cols-3 gap-6">
-                  {categories[activeCategory].subCategories.map((subCat, index) => (
-                    <div key={index}>
-                      <h4 className="text-[#0066b3] mb-3 pb-2 border-b border-gray-200">
-                        {subCat.name}
-                      </h4>
-                      <ul className="space-y-2">
-                        {subCat.items.map((item, itemIndex) => (
-                          <li key={itemIndex}>
-                            <a 
-                              href="#" 
-                              className="text-sm text-gray-600 hover:text-[#f37021] hover:underline transition-colors block"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setIsOpen(false);
-                              }}
-                            >
-                              {item}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
+            {/* RIGHT */}
+            <div className="w-[700px] p-6 bg-white">
+              <div className="grid grid-cols-3 gap-6">
+                {products
+                  .filter(
+                    (p) =>
+                      p.categoryId === categories[activeCategory]?.categoryId,
+                  )
+                  .slice(0, 15)
+                  .map((p) => (
+                    <div key={p.productId}>
+                      <a
+                        href={`/product/${p.productId}`}
+                        className="text-sm text-gray-600 hover:text-[#f37021]"
+                      >
+                        {p.name}
+                      </a>
                     </div>
                   ))}
-                </div>
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
