@@ -1,4 +1,3 @@
-// src/app/pages/HomePage.tsx
 import { Banner } from "../components/Banner.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
 import { ServiceCard } from "../components/ServiceCard.tsx";

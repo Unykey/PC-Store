@@ -4,13 +4,13 @@ import {
   Plus,
   Search,
   ChevronDown,
-  ShoppingCart,
-  ExternalLink,
 } from "lucide-react";
 import { formatVnd } from "../utils/formatCurrency";
 import { getImageUrl } from "../utils/image";
+import { Link } from "react-router-dom";
 
 interface Product {
+  productId: number;
   model: string;
   image: string;
   price: string;
@@ -42,7 +42,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
 
   useEffect(() => {
     if (products.length > 0) {
-      console.log(products[0]);
+      console.log(products);
       setSelectedProducts([products[0]]);
     }
   }, [products]);
@@ -344,20 +344,24 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                 {/* CTA Row */}
                 <tr>
                   <td className="sticky left-0 z-10 bg-gray-50 border-r-2 border-t-2 border-gray-200 p-4"></td>
-                  {selectedProducts.map((_, index) => (
+                  {selectedProducts.map((product, index) => (
                     <td
                       key={index}
                       className="border-t-2 border-gray-200 p-4 bg-gray-50"
                     >
                       <div className="flex flex-col gap-2">
-                        <button className="bg-[#f37021] text-white px-4 py-2 rounded-md hover:bg-[#d45f1a] transition-colors text-sm font-medium flex items-center justify-center gap-2">
-                          <ShoppingCart size={16} />
+                        <Link
+                          to={`/checkout?productId=${product.productId}&quantity=1`}
+                          className="bg-[#f37021] text-white px-4 py-2 rounded-md hover:bg-[#d45f1a] transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                        >
                           Mua ngay
-                        </button>
-                        <button className="bg-white text-[#0066b3] border border-[#0066b3] px-4 py-2 rounded-md hover:bg-[#0066b3] hover:text-white transition-colors text-sm font-medium flex items-center justify-center gap-2">
-                          <ExternalLink size={16} />
+                        </Link>
+                        <Link
+                          to={`/product/${product.productId}`}
+                          className="bg-white text-[#0066b3] border border-[#0066b3] px-4 py-2 rounded-md hover:bg-[#0066b3] hover:text-white transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                        >
                           Xem chi tiết
-                        </button>
+                        </Link>
                       </div>
                     </td>
                   ))}
