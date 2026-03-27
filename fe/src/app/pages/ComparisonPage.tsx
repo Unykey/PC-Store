@@ -22,8 +22,9 @@ export function ComparisonPage() {
           });
 
         return {
+          productId: item.productId,
           model: item.name,
-          image: "/placeholder.png",
+          image: item.image,
           price: item.price?.toString() || "0",
           brand: item.name?.split(" ")[0] || "",
           category: item.categoryName || "",

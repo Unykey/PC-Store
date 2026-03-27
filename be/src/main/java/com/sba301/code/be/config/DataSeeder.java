@@ -147,8 +147,21 @@ public class DataSeeder implements CommandLineRunner {
             p.setSerialNumber("SN-" + UUID.randomUUID());
             p.setCategory(categories.get(random.nextInt(categories.size())));
 
-            List<ProductSpecification> specs = new ArrayList<>();
+            Map<String, String> imageMap = Map.of(
+                    "CPU", "/images/cpu.jpg",
+                    "GPU", "/images/gpu.jpg",
+                    "RAM", "/images/ram.jpg",
+                    "SSD", "/images/ssd.jpg",
+                    "Mainboard", "/images/mainboard.jpg",
+                    "PSU", "/images/psu.jpg",
+                    "Case", "/images/case.jpg",
+                    "Monitor", "/images/monitor.jpg"
+            );
+
             String cateName = p.getCategory().getName();
+            p.setImage(imageMap.getOrDefault(cateName, "/images/default.jpg"));
+
+            List<ProductSpecification> specs = new ArrayList<>();
 
             if ("CPU".equalsIgnoreCase(cateName)) {
                 specs.add(createSpec("Cores", faker.number().numberBetween(4, 16) + "", p));

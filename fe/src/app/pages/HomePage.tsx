@@ -1,4 +1,3 @@
-// src/app/pages/HomePage.tsx
 import { Banner } from "../components/Banner.tsx";
 import { ProductCard } from "../components/ProductCard.tsx";
 import { ServiceCard } from "../components/ServiceCard.tsx";
@@ -9,6 +8,7 @@ import { Button } from "../components/ui/button.tsx"; // Component Button của 
 import { useEffect, useState } from "react";
 import { publicProductApi, type ProductResponse } from "@/api/productApi";
 import { formatVnd } from "../utils/formatCurrency";
+import { getImageUrl } from "../utils/image.ts";
 
 type UIProduct = {
   id: number;
@@ -169,7 +169,7 @@ export default function HomePage() {
               <ProductCard
                 key={product.id}
                 id={product.id}
-                image={product.image}
+                image={getImageUrl(product.image)}
                 name={product.name}
                 price={product.price}
                 oldPrice={product.oldPrice}

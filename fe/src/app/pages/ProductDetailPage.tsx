@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { publicProductApi } from "@/api/productApi";
 import { formatVnd } from "../utils/formatCurrency";
+import { getImageUrl } from "../utils/image";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -53,7 +54,7 @@ export default function ProductDetailPage() {
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="grid gap-6 md:grid-cols-2">
             <img
-              src={product.image}
+              src={getImageUrl(product.image)}
               alt={product.name}
               className="h-[360px] w-full rounded-lg object-cover"
             />

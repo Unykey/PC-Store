@@ -16,6 +16,7 @@ public class ProductRequest {
     private BigDecimal price;
     private int stockQuantity;
     private String serialNumber;
+    private String image;
     private Long categoryId;
     private List<ProductSpecificationRequest> specifications;
 }
