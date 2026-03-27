@@ -63,41 +63,43 @@ export function Header(_: HeaderProps) {
                   </button>
                 </div>
              
-              
               {/* Right Actions */}
-              <div className="flex items-center gap-6 flex-shrink-0">
-          
-                 </div>
-               <Link to="/admin" className="hidden md:inline-flex items-center px-3 py-2 bg-[#f37021] text-white rounded-lg hover:bg-[#d96319] transition-colors">
-                                  Quản trị
-                                </Link>
-                
-                {/* User Login */}
-                {!isLoggedIn ? (
-                  <button
-                    onClick={() => navigate("/login")}
-                    className="flex items-center gap-2 text-gray-700"
-                  >
-                    <div className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                      <User size={18} />
-                    </div>
-                    <div className="hidden lg:block">
-                      <div className="text-xs text-gray-500">Đăng nhập</div>
-                      <div className="text-sm font-medium">Đăng ký</div>
-                    </div>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 text-gray-700 hover:text-red-500"
-                  >
-                    <LogOut size={20} />
-                    <span className="hidden lg:block text-sm font-medium">
-                      Logout
-                    </span>
-                  </button>
-                )}
+<div className="flex items-center gap-6 flex-shrink-0">
+  
+  <Link
+    to="/admin"
+    className="hidden md:inline-flex items-center px-3 py-2 bg-[#f37021] text-white rounded-lg hover:bg-[#d96319] transition-colors"
+  >
+    Quản trị
+  </Link>
 
+  {/* User Login */}
+  {!isLoggedIn ? (
+    <button
+      onClick={() => navigate("/login")}
+      className="flex items-center gap-2 text-gray-700"
+    >
+      <div className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center">
+        <User size={18} />
+      </div>
+      <div className="hidden lg:block">
+        <div className="text-xs text-gray-500">Đăng nhập</div>
+        <div className="text-sm font-medium">Đăng ký</div>
+      </div>
+    </button>
+  ) : (
+    <button
+      onClick={handleLogout}
+      className="flex items-center gap-2 text-gray-700 hover:text-red-500"
+    >
+      <LogOut size={20} />
+      <span className="hidden lg:block text-sm font-medium">
+        Logout
+      </span>
+    </button>
+  )}
+
+</div>
                 {/* Notifications */}
                 <button className="relative p-2 text-gray-700 hover:text-[#f37021] transition-colors">
                   <Bell size={24} />
