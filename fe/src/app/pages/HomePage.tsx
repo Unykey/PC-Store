@@ -9,6 +9,7 @@ import { Button } from "../components/ui/button.tsx"; // Component Button của 
 import { useEffect, useState } from "react";
 import { publicProductApi } from "@/api/productApi";
 import { formatVnd } from "../utils/formatCurrency";
+import { getImageUrl } from "../utils/image.ts";
 
 export default function HomePage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -159,7 +160,7 @@ export default function HomePage() {
               <ProductCard
                 key={product.id}
                 id={product.id}
-                image={product.image}
+                image={getImageUrl(product.image)}
                 name={product.name}
                 price={formatVnd(product.price)}
                 oldPrice={

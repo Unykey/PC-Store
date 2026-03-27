@@ -38,6 +38,9 @@ public class Product {
     @Column(unique = true)
     private String serialNumber;
 
+    @Column(length = 255)
+    private String image;
+
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;

@@ -8,6 +8,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { formatVnd } from "../utils/formatCurrency";
+import { getImageUrl } from "../utils/image";
 
 interface Product {
   model: string;
@@ -41,6 +42,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
 
   useEffect(() => {
     if (products.length > 0) {
+      console.log(products[0]);
       setSelectedProducts([products[0]]);
     }
   }, [products]);
@@ -116,7 +118,6 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
       {
         category: "Tổng Quan",
         items: [
-          { label: "Giá", key: "price" },
           { label: "Hãng", key: "brand" },
           { label: "Loại", key: "category" },
         ],
@@ -192,7 +193,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
             </button>
             <div className="w-full h-32 bg-gray-100 rounded-md overflow-hidden mb-3">
               <img
-                src={product.image}
+                src={getImageUrl(product.image)}
                 alt={product.model}
                 className="w-full h-full object-cover"
               />
@@ -273,7 +274,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                       <div className="text-center">
                         <div className="w-20 h-20 mx-auto mb-2 bg-gray-100 rounded-lg overflow-hidden">
                           <img
-                            src={product.image}
+                            src={getImageUrl(product.image)}
                             alt={product.model}
                             className="w-full h-full object-cover"
                           />
@@ -469,7 +470,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                     >
                       <div className="w-full h-32 bg-gray-100 rounded-md overflow-hidden mb-3">
                         <img
-                          src={product.image}
+                          src={getImageUrl(product.image)}
                           alt={product.model}
                           className="w-full h-full object-cover"
                         />

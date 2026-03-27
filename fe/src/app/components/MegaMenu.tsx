@@ -1,5 +1,3 @@
-// Giữ nguyên UI, chỉ thay data tĩnh bằng data API
-
 import { useState, useEffect } from "react";
 import { Laptop, Cpu, HardDrive, ChevronRight } from "lucide-react";
 import { categoryApi } from "@/api/categoryApi";
@@ -23,14 +21,12 @@ export function MegaMenu() {
     fetchData();
   }, []);
 
-  // map icon theo index (giữ UI cũ)
   const icons = [Laptop, Cpu, HardDrive];
 
   return (
-    <div className="relative" onMouseLeave={() => setIsOpen(false)}>
+    <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        onMouseEnter={() => setIsOpen(true)}
         className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-[#f37021] text-sm"
       >
         <span>Danh mục sản phẩm</span>
@@ -46,11 +42,9 @@ export function MegaMenu() {
                 return (
                   <button
                     key={c.categoryId}
-                    onMouseEnter={() => setActiveCategory(index)}
+                    onClick={() => setActiveCategory(index)}
                     className={`w-full flex items-center gap-3 px-4 py-3 ${
-                      activeCategory === index
-                        ? "bg-white text-[#0066b3]"
-                        : ""
+                      activeCategory === index ? "bg-white text-[#0066b3]" : ""
                     }`}
                   >
                     <Icon size={18} />
@@ -67,10 +61,9 @@ export function MegaMenu() {
                 {products
                   .filter(
                     (p) =>
-                      p.categoryId ===
-                      categories[activeCategory]?.categoryId
+                      p.categoryId === categories[activeCategory]?.categoryId,
                   )
-                  .slice(0, 15) // giới hạn cho đẹp UI
+                  .slice(0, 15)
                   .map((p) => (
                     <div key={p.productId}>
                       <a

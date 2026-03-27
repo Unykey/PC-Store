@@ -19,6 +19,7 @@ export interface ProductResponse {
   price: number;
   stockQuantity: number;
   serialNumber?: string;
+  image?: string;
   categoryId?: number;
   categoryName?: string;
 
@@ -31,6 +32,7 @@ export interface ProductRequest {
   price: number;
   stockQuantity: number;
   serialNumber?: string;
+  image?: string;
   categoryId?: number;
 }
 
