@@ -7,27 +7,37 @@ import { Mail } from "lucide-react"; // Thêm icon Mail
 import { Input } from "../components/ui/input.tsx"; // Component Input của Shadcn
 import { Button } from "../components/ui/button.tsx"; // Component Button của Shadcn
 import { useEffect, useState } from "react";
-import { publicProductApi } from "@/api/productApi";
+import { publicProductApi, type ProductResponse } from "@/api/productApi";
 import { formatVnd } from "../utils/formatCurrency";
 
+type UIProduct = {
+  id: number;
+  name: string;
+  image: string;
+  price: string;
+  oldPrice?: string;
+  rating: number;
+  discount?: string;
+  inStock: boolean;
+};
+
 export default function HomePage() {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<UIProduct[]>([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
       const res = await publicProductApi.getProductsPaging();
-      console.log(res.data);
-      const items = res.data.data;
+      const items = res.data.data as ProductResponse[];
 
-      const mapped = items.map((item: any) => ({
+      const mapped: UIProduct[] = items.map((item) => ({
         id: item.productId,
         name: item.name,
-        image: item.image || null,
-        price: item.price,
-        oldPrice: item.oldPrice,
-        rating: item.rating || 0,
-        discount: item.discount,
-        inStock: item.stockQuantity > 0,
+        image: item.image ?? '',
+        price: formatVnd(item.price ?? 0),
+        oldPrice: (item as unknown as Record<string, unknown>).oldPrice ? formatVnd(Number((item as any).oldPrice)) : undefined,
+        rating: (item as any).rating ?? 0,
+        discount: typeof (item as any).discount === 'number' ? `${(item as any).discount}%` : undefined,
+        inStock: (item.stockQuantity ?? 0) > 0,
       }));
 
       setProducts(mapped);
@@ -161,10 +171,8 @@ export default function HomePage() {
                 id={product.id}
                 image={product.image}
                 name={product.name}
-                price={formatVnd(product.price)}
-                oldPrice={
-                  product.oldPrice ? formatVnd(product.oldPrice) : undefined
-                }
+                price={product.price}
+                oldPrice={product.oldPrice}
                 rating={product.rating}
                 discount={product.discount}
                 inStock={product.inStock}

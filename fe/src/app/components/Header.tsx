@@ -2,11 +2,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Search, Bell, User, ShoppingCart } from 'lucide-react';
 import { MegaMenu } from './MegaMenu';
 
-interface HeaderProps {
-    onMenuToggle?: () => void;
-}
-
-export function Header(_: HeaderProps) {
+export function Header() {
     const navigate = useNavigate();
 
     const quickLinks = [
@@ -82,6 +78,11 @@ export function Header(_: HeaderProps) {
                                         <div className="text-sm font-medium">(1) sản phẩm</div>
                                     </div>
                                 </button>
+
+                                {/* Admin Link */}
+                                <Link to="/admin" className="hidden md:inline-flex items-center px-3 py-2 bg-[#f37021] text-white rounded-lg hover:bg-[#d96319] transition-colors">
+                                  Quản trị
+                                </Link>
                             </div>
                         </div>
                     </div>

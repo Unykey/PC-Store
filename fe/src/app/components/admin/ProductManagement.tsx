@@ -75,6 +75,7 @@ export function ProductManagement() {
     try {
       await deleteProduct(id);
       setProducts((prev) => prev.filter((p) => p.productId !== id));
+      alert('Delete successful');
     } catch (err) {
       const maybeErr = err as { response?: { data?: { message?: string } } } | undefined;
       alert(maybeErr?.response?.data?.message || 'Delete failed');
