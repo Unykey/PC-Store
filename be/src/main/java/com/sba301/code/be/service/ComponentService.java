@@ -7,5 +7,7 @@ import java.util.Map;
 
 @Service
 public interface ComponentService {
-    List<Map<String, Object>> getComponentsByType(String type);
+    Map<String, Object> searchComponents(
+            Map<String, String> params,
+            int page, int size);
 }

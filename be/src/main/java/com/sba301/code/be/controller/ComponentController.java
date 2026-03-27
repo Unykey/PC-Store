@@ -19,10 +19,14 @@ public class ComponentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Map<String, Object>>> getComponentsByType(@RequestParam("type") String type) {
+    public ResponseEntity<Map<String, Object>> searchComponents(
+            @RequestParam Map<String, String> params,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "16") int size
+    ) {
         try {
-            List<Map<String, Object>> components = componentService.getComponentsByType(type);
-            return ResponseEntity.ok(components);
+            Map<String, Object> response = componentService.searchComponents(params, page, size);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
