@@ -22,6 +22,7 @@ export function ComparisonPage() {
           });
 
         return {
+          productId: item.productId,
           model: item.name,
           image: item.image,
           price: item.price?.toString() || "0",
