@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, Bell, User, ShoppingCart } from 'lucide-react';
 import { MegaMenu } from './MegaMenu';
+import { HeaderAuth } from "./HeaderAuth";
 
 interface HeaderProps {
     onMenuToggle?: () => void;
@@ -60,18 +61,7 @@ export function Header(_: HeaderProps) {
                             {/* Right Actions */}
                             <div className="flex items-center gap-6 flex-shrink-0">
                                 {/* User Login */}
-                                <button
-                                    onClick={() => navigate('/login')}
-                                    className="flex items-center gap-2 text-gray-700 hover:text-[#f37021] transition-colors">
-                                    <div
-                                        className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                                        <User size={18} />
-                                    </div>
-                                    <div className="text-left hidden lg:block">
-                                        <div className="text-xs text-gray-500">Đăng nhập</div>
-                                        <div className="text-sm font-medium">Đăng ký</div>
-                                    </div>
-                                </button>
+                                <HeaderAuth/ >
 
                                 {/* Notifications */}
                                 <button className="relative p-2 text-gray-700 hover:text-[#f37021] transition-colors">
