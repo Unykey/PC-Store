@@ -12,4 +12,6 @@ public interface PaymentService {
     MomoCreatePaymentResponse createMomoPayment(MomoCreatePaymentRequest request, Long accountId);
 
     String handleMomoIpn(MomoIpnRequest request);
+
+    String handleMomoReturnAndGetRedirectUrl(String momoOrderId);
 }

@@ -85,7 +85,8 @@ export default function ProductDetailPage() {
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
-                  to={`/checkout?productId=${product.id}&quantity=1`}
+                  to="/checkout"
+                  state={{ productId: product.productId, quantity: 1 }}
                   className="rounded-md bg-[#f37021] px-4 py-2.5 font-medium text-white hover:bg-[#d45f1a]"
                 >
                   Mua ngay

@@ -351,7 +351,8 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                     >
                       <div className="flex flex-col gap-2">
                         <Link
-                          to={`/checkout?productId=${product.productId}&quantity=1`}
+                          to="/checkout"
+                          state={{ productId: product.productId, quantity: 1 }}
                           className="bg-[#f37021] text-white px-4 py-2 rounded-md hover:bg-[#d45f1a] transition-colors text-sm font-medium flex items-center justify-center gap-2"
                         >
                           Mua ngay
