@@ -376,7 +376,8 @@ export function DashboardHome() {
                     <span className="px-2 py-1 bg-red-100 text-red-800 rounded text-sm font-medium">{item.stock}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <button className="px-4 py-2 bg-[#f37021] text-white rounded-lg text-sm hover:bg-[#d96319] transition-colors">Restock</button>
+                    {/* Restock button removed on dashboard as requested; keep it on Inventory/Stock page */}
+                    <span className="text-sm text-gray-500">—</span>
                   </td>
                 </tr>
               ))}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Laptop, Cpu, HardDrive, ChevronRight } from "lucide-react";
 import { categoryApi } from "@/api/categoryApi";
 import publicProductApi from "@/api/productApi";
+import { Link } from "react-router-dom";
 
 export function MegaMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -338,12 +339,12 @@ export function MegaMenu() {
                   .slice(0, 15)
                   .map((p) => (
                     <div key={p.productId}>
-                      <a
-                        href={`/product/${p.productId}`}
+                      <Link
+                        to={`/product/${p.productId}`}
                         className="text-sm text-gray-600 hover:text-[#f37021]"
                       >
                         {p.name}
-                      </a>
+                      </Link>
                     </div>
                   ))}
               </div>

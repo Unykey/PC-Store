@@ -208,7 +208,6 @@ export function CustomerManagement() {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Orders</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Spent</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Join Date</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
@@ -249,15 +248,6 @@ export function CustomerManagement() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {customer.joinDate ? new Date(customer.joinDate).toLocaleDateString('vi-VN') : '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      customer.status === 'active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {customer.status === 'active' ? 'Active' : 'Inactive'}
-                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <button

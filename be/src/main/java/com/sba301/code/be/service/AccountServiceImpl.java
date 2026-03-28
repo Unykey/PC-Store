@@ -2,6 +2,7 @@ package com.sba301.code.be.service;
 
 import com.sba301.code.be.dto.request.LoginDto;
 import com.sba301.code.be.dto.request.RegisterDto;
+import com.sba301.code.be.dto.response.AccountResponse;
 import com.sba301.code.be.dto.response.JWTAuthResponse;
 import com.sba301.code.be.model.entity.Account;
 import com.sba301.code.be.model.entity.Role;
@@ -26,20 +27,25 @@ public class AccountServiceImpl implements AccountService{
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
+    private final OrderService orderService;
 
 
     @Override
-    public List<Account> getAllAccounts() {
-        return accountRepository.findAll();
+    public List<AccountResponse> getAllAccounts() {
+        return accountRepository.findAll().stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Override
-    public Account getAccountById(Long accountId) {
-        return accountRepository.findById(accountId).orElseThrow(() -> new RuntimeException("Account not found"));
+    public AccountResponse getAccountById(Long accountId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+        return toResponse(account);
     }
 
     @Override
-    public Account createAccount(Account account) {
+    public AccountResponse createAccount(Account account) {
         if (account.getPassword() != null) {
             account.setPassword(passwordEncoder.encode(account.getPassword()));
         }
@@ -49,18 +55,19 @@ public class AccountServiceImpl implements AccountService{
                     .orElseThrow(() -> new RuntimeException("Role not found"));
             account.setRole(role);
         }
-        return accountRepository.save(account);
+        return toResponse(accountRepository.save(account));
     }
 
     @Override
-    public Account updateAccount(Long accountId, Account account) {
-        Account existing = accountRepository.findById(accountId).orElseThrow(() -> new RuntimeException("Account not found"));
+    public AccountResponse updateAccount(Long accountId, Account account) {
+        Account existing = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
         if (account.getFullName() != null) existing.setFullName(account.getFullName());
         if (account.getEmail() != null) existing.setEmail(account.getEmail());
         if (account.getPhoneNumber() != null) existing.setPhoneNumber(account.getPhoneNumber());
         if (account.getPassword() != null) existing.setPassword(passwordEncoder.encode(account.getPassword()));
         if (account.getRole() != null) existing.setRole(account.getRole());
-        return accountRepository.save(existing);
+        return toResponse(accountRepository.save(existing));
     }
 
     @Override
@@ -115,20 +122,43 @@ public class AccountServiceImpl implements AccountService{
     }
 
     @Override
-    public List<Account> searchAccounts(String query) {
+    public List<AccountResponse> searchAccounts(String query) {
         if (query == null || query.isBlank()) return List.of();
         String q = query.trim();
 
-        // numeric id search
+        // Numeric id search
         try {
             Long id = Long.parseLong(q);
-            return accountRepository.findById(id).map(List::of).orElse(List.of());
+            return accountRepository.findById(id)
+                    .map(a -> List.of(toResponse(a)))
+                    .orElse(List.of());
         } catch (NumberFormatException ignored) {}
 
-        String lower = q.toLowerCase();
-        return accountRepository.findAll().stream()
+        return filterAccountsByQuery(accountRepository.findAll(), q.toLowerCase());
+    }
+
+    // --- Helpers ---
+
+    private List<AccountResponse> filterAccountsByQuery(List<Account> accounts, String lower) {
+        return accounts.stream()
                 .filter(a -> (a.getFullName() != null && a.getFullName().toLowerCase().contains(lower))
                         || (a.getEmail() != null && a.getEmail().toLowerCase().contains(lower)))
+                .map(this::toResponse)
                 .toList();
+    }
+
+    private AccountResponse toResponse (Account account){
+        AccountResponse response = new AccountResponse();
+        response.setId(account.getAccountId());
+        response.setEmail(account.getEmail());
+        response.setRole(account.getRole());
+        response.setAddress(account.getAddress());
+        response.setPhoneNumber(account.getPhoneNumber());
+
+        response.setOrders(
+                orderService.getOrdersByAccountId(account.getAccountId())
+        );
+
+        return response;
     }
 }
