@@ -18,6 +18,7 @@ import com.sba301.code.be.repository.InstallmentRepository;
 import com.sba301.code.be.repository.OrderRepository;
 import com.sba301.code.be.repository.PaymentTransactionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ import org.springframework.web.client.RestTemplate;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,6 +36,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentServiceImpl implements PaymentService {
 
     private final OrderRepository orderRepository;
@@ -53,11 +56,20 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${app.momo.endpoint:https://test-payment.momo.vn/v2/gateway/api/create}")
     private String momoEndpoint;
 
-    @Value("${app.momo.redirect-url:http://localhost:5173/checkout/result}")
+    @Value("${app.momo.query-endpoint:https://test-payment.momo.vn/v2/gateway/api/query}")
+    private String momoQueryEndpoint;
+
+    @Value("${app.momo.redirect-url:http://localhost:8080/payment/momo/return}")
     private String redirectUrl;
 
     @Value("${app.momo.ipn-url:http://localhost:8080/api/payments/momo/ipn}")
     private String ipnUrl;
+
+    @Value("${app.momo.return-success-url:http://localhost:5173/payment/result?status=success}")
+    private String returnSuccessUrl;
+
+    @Value("${app.momo.return-failure-url:http://localhost:5173/payment/result?status=failed}")
+    private String returnFailureUrl;
 
     @Override
     @Transactional
@@ -295,6 +307,93 @@ public class PaymentServiceImpl implements PaymentService {
         return "OK";
     }
 
+    @Override
+    @Transactional
+    public String handleMomoReturnAndGetRedirectUrl(String momoOrderId) {
+        log.info("MoMo return received: momoOrderId={}", momoOrderId);
+
+        if (momoOrderId == null || momoOrderId.isBlank()) {
+            log.warn("MoMo return missing orderId");
+            return buildRedirectUrl(returnFailureUrl, null, -1, "Missing orderId");
+        }
+
+        PaymentTransaction tx = paymentTransactionRepository.findByOrderCode(momoOrderId)
+                .orElse(null);
+
+        if (tx == null) {
+            log.warn("MoMo return transaction not found: momoOrderId={}", momoOrderId);
+            return buildRedirectUrl(returnFailureUrl, extractOrderIdFromOrderCode(momoOrderId), -1,
+                    "Transaction not found");
+        }
+
+        String requestId = UUID.randomUUID().toString().replace("-", "");
+        log.info("MoMo query start: requestId={}, orderCode={}, txId={}", requestId, momoOrderId, tx.getId());
+        String rawSignature = "accessKey=" + accessKey
+                + "&orderId=" + momoOrderId
+                + "&partnerCode=" + partnerCode
+                + "&requestId=" + requestId;
+        String signature = hmacSha256(rawSignature, secretKey);
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("partnerCode", partnerCode);
+        payload.put("requestId", requestId);
+        payload.put("orderId", momoOrderId);
+        payload.put("lang", "vi");
+        payload.put("signature", signature);
+
+        Map<String, Object> momoResponse = callMomoQueryApi(payload);
+
+        int resultCode = parseResultCode(momoResponse.get("resultCode"));
+        String message = String.valueOf(momoResponse.getOrDefault("message", "Query payment status failed"));
+        log.info("MoMo query result: requestId={}, orderCode={}, resultCode={}, message={}",
+                requestId, momoOrderId, resultCode, message);
+
+        tx.setRawPayload(writeJsonSafe(momoResponse));
+        tx.setResultCode(resultCode);
+        tx.setMessage(message);
+        tx.setSignatureValid(true);
+
+        Object transIdObj = momoResponse.get("transId");
+        if (transIdObj != null) {
+            tx.setMomoTransId(String.valueOf(transIdObj));
+        }
+
+        if (resultCode == 0) {
+            tx.setStatus(PaymentTransactionStatus.SUCCESS);
+            tx.setPaidAt(LocalDateTime.now());
+
+            if (tx.getInstallment() != null) {
+                Installment installment = tx.getInstallment();
+                if (installment.getInstallmentStatus() != InstallmentStatus.PAID) {
+                    installment.setInstallmentStatus(InstallmentStatus.PAID);
+                    installment.setPaidDate(LocalDate.now());
+                    installmentRepository.save(installment);
+                }
+            } else {
+                Order order = tx.getOrder();
+                if (order.getOrderStatus() == OrderStatus.PENDING) {
+                    order.setOrderStatus(OrderStatus.CONFIRMED);
+                    orderRepository.save(order);
+                }
+            }
+
+            paymentTransactionRepository.save(tx);
+            log.info("MoMo payment marked success: txId={}, orderId={}, installmentId={}",
+                    tx.getId(),
+                    tx.getOrder() == null ? null : tx.getOrder().getOrderId(),
+                    tx.getInstallment() == null ? null : tx.getInstallment().getId());
+            return buildRedirectUrl(returnSuccessUrl, tx.getOrder().getOrderId(), resultCode, message);
+        }
+
+        tx.setStatus(PaymentTransactionStatus.FAILED);
+        paymentTransactionRepository.save(tx);
+        log.warn("MoMo payment marked failed: txId={}, orderId={}, resultCode={}",
+                tx.getId(),
+                tx.getOrder() == null ? null : tx.getOrder().getOrderId(),
+                resultCode);
+        return buildRedirectUrl(returnFailureUrl, tx.getOrder().getOrderId(), resultCode, message);
+    }
+
     private Map<String, Object> callMomoCreateApi(Map<String, Object> payload) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -315,6 +414,27 @@ public class PaymentServiceImpl implements PaymentService {
         fallback.put("message", "Sandbox fallback: generated local payUrl");
         fallback.put("payUrl",
                 redirectUrl + "?requestId=" + payload.get("requestId") + "&orderId=" + payload.get("orderId"));
+        return fallback;
+    }
+
+    private Map<String, Object> callMomoQueryApi(Map<String, Object> payload) {
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(momoQueryEndpoint, HttpMethod.POST, entity, Map.class);
+            if (response.getBody() != null) {
+                return response.getBody();
+            }
+        } catch (Exception ignored) {
+            // Return standardized fallback response for local testing.
+        }
+
+        Map<String, Object> fallback = new HashMap<>();
+        fallback.put("resultCode", -1);
+        fallback.put("message", "Cannot query MoMo payment status");
         return fallback;
     }
 
@@ -355,5 +475,50 @@ public class PaymentServiceImpl implements PaymentService {
 
     private String nullSafeLong(Long value) {
         return value == null ? "0" : value.toString();
+    }
+
+    private int parseResultCode(Object resultCodeObj) {
+        if (resultCodeObj instanceof Number n) {
+            return n.intValue();
+        }
+        if (resultCodeObj instanceof String s) {
+            try {
+                return Integer.parseInt(s);
+            } catch (NumberFormatException ignored) {
+                return -1;
+            }
+        }
+        return -1;
+    }
+
+    private Long extractOrderIdFromOrderCode(String orderCode) {
+        if (orderCode == null) {
+            return null;
+        }
+        try {
+            String[] parts = orderCode.split("-");
+            if (parts.length >= 2 && "ORDER".equalsIgnoreCase(parts[0])) {
+                return Long.parseLong(parts[1]);
+            }
+        } catch (Exception ignored) {
+            return null;
+        }
+        return null;
+    }
+
+    private String buildRedirectUrl(String baseUrl, Long orderId, int resultCode, String message) {
+        String separator = baseUrl.contains("?") ? "&" : "?";
+        StringBuilder url = new StringBuilder(baseUrl)
+                .append(separator)
+                .append("orderId=")
+                .append(orderId == null ? "" : orderId)
+                .append("&resultCode=")
+                .append(resultCode);
+
+        if (message != null && !message.isBlank()) {
+            url.append("&message=")
+                    .append(URLEncoder.encode(message, StandardCharsets.UTF_8));
+        }
+        return url.toString();
     }
 }
