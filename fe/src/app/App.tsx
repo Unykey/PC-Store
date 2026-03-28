@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -18,11 +18,19 @@ import { AdminDashboard } from './components/AdminDashboard';
 import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
+    const location = useLocation();
+    const isAdminRoute = location.pathname.startsWith('/admin');
+
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            <Header />
+            {/* 1. Header luôn cố định ở trên */}
+            {/* Hide global Header for admin pages since AdminDashboard contains its own header */}
+            {!isAdminRoute && <Header />}
 
-            <main className="flex-1 pt-[80px]">
+
+            {/* 2. Phần nội dung chính sẽ thay đổi tùy theo URL */}
+            {/* Thêm pt-20 hoặc pt-28 tùy độ cao header để tránh nội dung bị che */}
+            <main className={`flex-1 ${isAdminRoute ? 'pt-0' : 'pt-[80px]'}`}>
                 <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />

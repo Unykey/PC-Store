@@ -5,15 +5,14 @@ import {
   Warehouse,
   ShoppingCart,
   Users,
-  Star,
-  BarChart3,
+   BarChart3,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { DashboardHome } from './admin/DashboardHome';
 import { ProductManagement } from './admin/ProductManagement';
 import { InventoryManagement } from './admin/InventoryManagement';
 import { OrdersManagement } from './admin/OrdersManagement';
 import { CustomerManagement } from './admin/CustomerManagement';
-import { ReviewManagement } from './admin/ReviewManagement';
 import { ReportsManagement } from './admin/ReportsManagement';
 import { AdminSidebar } from './admin/AdminSidebar';
 
@@ -29,7 +28,6 @@ const menuItems: MenuItem[] = [
   { id: 'inventory', label: 'Inventory', icon: Warehouse },
   { id: 'orders', label: 'Orders', icon: ShoppingCart },
   { id: 'customers', label: 'Customers', icon: Users },
-  { id: 'reviews', label: 'Reviews', icon: Star },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
 ];
 
@@ -48,8 +46,6 @@ export function AdminDashboard() {
         return <OrdersManagement />;
       case 'customers':
         return <CustomerManagement />;
-      case 'reviews':
-        return <ReviewManagement />;
       case 'reports':
         return <ReportsManagement />;
       default:
@@ -69,8 +65,8 @@ export function AdminDashboard() {
                 <LayoutDashboard className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-800">Admin Panel</h1>
-                <p className="text-xs text-gray-500">TechShop Management</p>
+                <h1 className="text-xl font-bold text-gray-800">Bảng quản trị</h1>
+                <p className="text-xs text-gray-500">Quản lý TechShop</p>
               </div>
             </div>
 
@@ -83,12 +79,15 @@ export function AdminDashboard() {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-[#f37021] rounded-full"></span>
               </button>
 
+              {/* Back to Home button */}
+              <Link to="/" className="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">Trang chủ</Link>
+
               <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#f37021] to-[#d96319] flex items-center justify-center text-white font-semibold shadow-md">
                   A
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-semibold text-gray-700">Administrator</p>
+                  <p className="text-sm font-semibold text-gray-700">Quản trị viên</p>
                   <p className="text-xs text-gray-500">Super Admin</p>
                 </div>
               </div>

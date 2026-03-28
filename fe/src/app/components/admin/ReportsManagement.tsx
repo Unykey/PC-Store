@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { TooltipProps } from 'recharts';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Download, TrendingUp, TrendingDown } from 'lucide-react';
+import { Download, TrendingUp } from 'lucide-react';
 import { reportsApi } from '@/api/reportsApi';
 import {
   installmentApi,
-  type AdminInstallmentPaymentResponse,
   type AdminInstallmentMonitoringSummaryResponse,
   type AdminInstallmentContractResponse,
 } from '@/api/orderApi';
@@ -13,25 +12,18 @@ import {
 const COLORS = ['#f37021', '#ff8c42', '#ffa500', '#ffb84d', '#ffc966'];
 
 export function ReportsManagement() {
-  const [reportType, setReportType] = useState<'sales' | 'products' | 'customers' | 'installments'>('sales');
+  const [reportType, setReportType] = useState<'sales' | 'products' | 'installments'>('sales');
   const [loading, setLoading] = useState(false);
   const [months] = useState(6);
 
   const [salesData, setSalesData] = useState<{ month: string; sales: number; orders: number }[]>([]);
   const [categoryRevenue, setCategoryRevenue] = useState<{ name: string; revenue: number }[]>([]);
   const [topProducts, setTopProducts] = useState<
-    { name: string; sales: number; revenue: number; growth: number }[]
+    { name: string; sales: number; revenue: number }[]
   >([]);
-  const [customerKpis, setCustomerKpis] = useState<{
-    totalCustomers: number;
-    newCustomers: number;
-    returningCustomers: number;
-    avgCustomerValue: number;
-  } | null>(null);
   const now = new Date();
   const [paidMonth, setPaidMonth] = useState(now.getMonth() + 1);
   const [paidYear, setPaidYear] = useState(now.getFullYear());
-  const [paidInstallments, setPaidInstallments] = useState<AdminInstallmentPaymentResponse[]>([]);
   const [contractState, setContractState] = useState<'ALL' | 'ACTIVE' | 'OVERDUE' | 'DEFAULTED' | 'CLOSED'>('ALL');
   const [contractSearch, setContractSearch] = useState('');
   const [monitoringLoading, setMonitoringLoading] = useState(false);
@@ -59,11 +51,10 @@ export function ReportsManagement() {
     const run = async () => {
       try {
         setLoading(true);
-        const [salesRes, catRes, topRes, custRes] = await Promise.all([
+        const [salesRes, catRes, topRes] = await Promise.all([
           reportsApi.salesOverview({ months }),
           reportsApi.categoryRevenue({ months }),
           reportsApi.topProducts({ limit: 5, sortBy: 'sales' }),
-          reportsApi.customerInsights({ months }),
         ]);
 
         if (cancelled) return;
@@ -82,26 +73,13 @@ export function ReportsManagement() {
         }));
         setCategoryRevenue(cat);
 
-        // Top products for table; growth not available yet -> set 0 (UI still renders)
+        // Top products for table; growth removed
         setTopProducts(
           (topRes.data.data || []).map((p) => ({
             name: p.productName,
             sales: Number(p.totalQuantitySold || 0),
             revenue: Number(p.totalSalesAmount || 0),
-            growth: 0,
           })),
-        );
-
-        const ci = custRes.data.data;
-        setCustomerKpis(
-          ci
-            ? {
-              totalCustomers: Number(ci.totalCustomers || 0),
-              newCustomers: Number(ci.newCustomers || 0),
-              returningCustomers: Number(ci.returningCustomers || 0),
-              avgCustomerValue: Number(ci.avgCustomerValue || 0),
-            }
-            : null,
         );
       } catch (e) {
         console.error('Failed to load reports', e);
@@ -114,26 +92,6 @@ export function ReportsManagement() {
       cancelled = true;
     };
   }, [months]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      try {
-        const res = await installmentApi.adminGetPaidInstallments({ month: paidMonth, year: paidYear });
-        if (cancelled) return;
-        setPaidInstallments(res.data.data || []);
-      } catch (e) {
-        if (!cancelled) {
-          console.error('Failed to load paid installments', e);
-          setPaidInstallments([]);
-        }
-      }
-    };
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [paidMonth, paidYear]);
 
   useEffect(() => {
     let cancelled = false;
@@ -269,8 +227,8 @@ export function ReportsManagement() {
         ['Period (months)', months],
         [],
         ['Top Products'],
-        ['Rank', 'Product', 'Units Sold', 'Revenue', 'Growth (%)'],
-        ...topProducts.map((p, i) => [i + 1, p.name, p.sales, p.revenue, p.growth]),
+        ['Rank', 'Product', 'Units Sold', 'Revenue'],
+        ...topProducts.map((p, i) => [i + 1, p.name, p.sales, p.revenue]),
         [],
         ['Monthly Product Trend'],
         ['Month', 'Orders'],
@@ -279,20 +237,6 @@ export function ReportsManagement() {
       downloadCsv(`product-performance-${stamp}.csv`, rows);
       return;
     }
-
-    const rows: Array<Array<string | number>> = [
-      ['Report Type', 'Customer Insights'],
-      ['Period (months)', months],
-      ['Total Customers', customerKpis?.totalCustomers ?? 0],
-      ['New Customers', customerKpis?.newCustomers ?? 0],
-      ['Returning Customers', customerKpis?.returningCustomers ?? 0],
-      ['Average Customer Value', customerKpis?.avgCustomerValue ?? 0],
-      [],
-      ['Customer Acquisition Trend'],
-      ['Month', 'Orders'],
-      ...salesData.map((r) => [r.month, r.orders]),
-    ];
-    downloadCsv(`customer-insights-${stamp}.csv`, rows);
   };
 
   return (
@@ -319,15 +263,6 @@ export function ReportsManagement() {
             Product Performance
           </button>
           <button
-            onClick={() => setReportType('customers')}
-            className={`px-4 py-2 rounded-lg transition-colors ${reportType === 'customers'
-              ? 'bg-[#f37021] text-white'
-              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-              }`}
-          >
-            Customer Insights
-          </button>
-          <button
             onClick={() => setReportType('installments')}
             className={`px-4 py-2 rounded-lg transition-colors ${reportType === 'installments'
               ? 'bg-[#f37021] text-white'
@@ -350,7 +285,7 @@ export function ReportsManagement() {
       {reportType === 'sales' && (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="bg-white rounded-lg shadow p-6">
               <p className="text-sm text-gray-600 mb-1">Total Revenue</p>
               <p className="text-2xl font-bold text-gray-900">
@@ -386,14 +321,6 @@ export function ReportsManagement() {
               <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
                 <TrendingUp className="w-4 h-4" />
                 <span>+5.1%</span>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-sm text-gray-600 mb-1">Conversion Rate</p>
-              <p className="text-2xl font-bold text-gray-900">3.8%</p>
-              <div className="flex items-center gap-1 mt-2 text-sm text-red-600">
-                <TrendingDown className="w-4 h-4" />
-                <span>-1.2%</span>
               </div>
             </div>
           </div>
@@ -487,7 +414,6 @@ export function ReportsManagement() {
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Sales</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Revenue</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Growth</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -500,19 +426,6 @@ export function ReportsManagement() {
                       <td className="px-6 py-4 text-sm text-gray-600">{product.sales} units</td>
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                         {formatPrice(product.revenue)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className={`flex items-center gap-1 ${product.growth > 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                          {product.growth > 0 ? (
-                            <TrendingUp className="w-4 h-4" />
-                          ) : (
-                            <TrendingDown className="w-4 h-4" />
-                          )}
-                          <span className="text-sm font-medium">
-                            {product.growth > 0 ? '+' : ''}{product.growth}%
-                          </span>
-                        </div>
                       </td>
                     </tr>
                   ))}
@@ -532,136 +445,6 @@ export function ReportsManagement() {
                 <Bar dataKey="orders" fill="#f37021" />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </>
-      )}
-
-      {/* Customer Insights */}
-      {reportType === 'customers' && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-sm text-gray-600 mb-1">Total Customers</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {loading ? '...' : (customerKpis?.totalCustomers ?? 0).toLocaleString('en-US')}
-              </p>
-              <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
-                <TrendingUp className="w-4 h-4" />
-                <span>+23.1%</span>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-sm text-gray-600 mb-1">New Customers</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {loading ? '...' : (customerKpis?.newCustomers ?? 0).toLocaleString('en-US')}
-              </p>
-              <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
-                <TrendingUp className="w-4 h-4" />
-                <span>+15.3%</span>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-sm text-gray-600 mb-1">Returning Customers</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {loading ? '...' : (customerKpis?.returningCustomers ?? 0).toLocaleString('en-US')}
-              </p>
-              <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
-                <TrendingUp className="w-4 h-4" />
-                <span>+8.7%</span>
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <p className="text-sm text-gray-600 mb-1">Avg. Customer Value</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {loading ? '...' : `₫ ${formatCompactPrice(customerKpis?.avgCustomerValue ?? 0)}`}
-              </p>
-              <div className="flex items-center gap-1 mt-2 text-sm text-green-600">
-                <TrendingUp className="w-4 h-4" />
-                <span>+12.5%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Customer Acquisition</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="orders" stroke="#f37021" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-lg font-semibold text-gray-900">Installment Payments (Monthly)</h3>
-              <div className="flex items-center gap-2">
-                <select
-                  value={paidMonth}
-                  onChange={(e) => setPaidMonth(Number(e.target.value))}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                >
-                  {Array.from({ length: 12 }).map((_, idx) => (
-                    <option key={idx + 1} value={idx + 1}>{idx + 1}</option>
-                  ))}
-                </select>
-                <select
-                  value={paidYear}
-                  onChange={(e) => setPaidYear(Number(e.target.value))}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                >
-                  {[now.getFullYear(), now.getFullYear() - 1, now.getFullYear() - 2].map((y) => (
-                    <option key={y} value={y}>{y}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Order</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Installment</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Paid Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Late Fee</th>
-                    <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {paidInstallments.map((p) => (
-                    <tr key={p.installmentId} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm">
-                        <p className="font-medium text-gray-900">{p.customerName || `#${p.accountId}`}</p>
-                        <p className="text-gray-500">{p.customerPhone || p.customerEmail || '-'}</p>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">#{p.orderId}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{p.monthNumber}/{p.totalMonths}</td>
-                      <td className="px-4 py-3 text-sm text-gray-700">
-                        {p.paidDate ? new Date(p.paidDate).toLocaleDateString('vi-VN') : '-'}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className={p.overdueFee > 0 ? 'font-medium text-red-600' : 'text-gray-500'}>
-                          {formatPrice(p.overdueFee || 0)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">{formatPrice(p.amount || 0)}</td>
-                    </tr>
-                  ))}
-                  {paidInstallments.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
-                        No paid installments for selected month.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
           </div>
         </>
       )}
