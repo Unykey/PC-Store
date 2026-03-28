@@ -1,12 +1,14 @@
 package com.sba301.code.be.dto.response;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+//@Builder
 public class ApiResponse<T> {
     private int status;      // 200, 400, 404, 500...
     private String message;  // "Thành công", "Lỗi..."

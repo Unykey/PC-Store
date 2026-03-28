@@ -1,6 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from 'react-router-dom';
+import { MegaMenu } from './MegaMenu';
+import { HeaderAuth } from "./HeaderAuth";
 import { Search, Bell, User, ShoppingCart, LogOut } from "lucide-react";
-import { MegaMenu } from "./MegaMenu";
 import { useEffect, useState } from "react";
 
 interface HeaderProps {
@@ -29,21 +30,10 @@ export function Header(_: HeaderProps) {
     { name: "Lịch trả góp", path: "/my-installments" },
   ];
 
-  return (
-    <>
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="border-b border-gray-200">
-          <div className="max-w-[1400px] mx-auto px-4 py-3">
-            <div className="flex items-center gap-4">
-              {/* Logo */}
-              <Link to="/" className="flex items-center gap-3 flex-shrink-0">
-                <div className="grid grid-cols-2 gap-0.5 w-8 h-8">
-                  <div className="bg-[#4FC3F7] rounded-sm"></div>
-                  <div className="bg-[#4FC3F7] rounded-sm"></div>
-                  <div className="bg-[#4FC3F7] rounded-sm"></div>
-                  <div className="bg-[#4FC3F7] rounded-sm"></div>
-                </div>
-              </Link>
+                            {/* Right Actions */}
+                            <div className="flex items-center gap-6 flex-shrink-0">
+                                {/* User Login */}
+                                <HeaderAuth/ >
 
               {/* Danh mục sản phẩm - Moved here */}
               <div className="flex-shrink-0">
