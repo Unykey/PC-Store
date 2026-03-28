@@ -33,7 +33,7 @@ export function Header(_: HeaderProps) {
     <header className="w-full bg-white shadow-sm">
       {/* Top Bar */}
       <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center gap-6">
-        
+
         {/* Mega Menu */}
         <div className="flex-shrink-0">
           <MegaMenu />
@@ -55,7 +55,7 @@ export function Header(_: HeaderProps) {
 
         {/* Right Actions */}
         <div className="flex items-center gap-6 flex-shrink-0">
-
+            <HeaderAuth />
           {/* Admin */}
           <Link
             to="/admin"
