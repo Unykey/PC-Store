@@ -64,10 +64,18 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/products/paging",
+                                "/images/**",
                                 "/api/payments/momo/ipn",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
+                                "/error",
+                                "/api/chat/**",
+                                "/api/components/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
                                 "/error")
                         .permitAll()
                         .anyRequest().authenticated())

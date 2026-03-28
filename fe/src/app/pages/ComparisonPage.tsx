@@ -1,42 +1,58 @@
 import { useEffect, useState } from "react";
 import { ComparisonTable } from "../components/ComparisonTable";
-import { productApi } from "@/api/productApi";
+import { publicProductApi } from "@/api/productApi";
+import { specificationApi } from "@/api/specificationApi";
+import { useParams } from "react-router-dom";
 
 export function ComparisonPage() {
+  const { id } = useParams();
   const [comparisonProducts, setComparisonProducts] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const res = await productApi.getAllProducts();
-      console.log(res.data);
+      if (!id) return;
 
-      const mapped = res.data.map((item: any) => ({
-        model: item.name,
-        image: item.image || "",
+      const mapProduct = (item: any, allSpecs: any[]) => {
+        const specs: Record<string, string> = {};
 
-        processor: item.processor || "",
-        ram: item.ram || "",
-        rom: item.rom || "",
+        allSpecs
+          .filter((s) => s.productId === item.productId)
+          .forEach((s) => {
+            specs[s.specKey] = s.specValue; // giữ nguyên key gốc
+          });
 
-        display: item.display || "",
-        graphics: item.graphics || "",
-        os: item.os || "",
-        battery: item.battery || "",
+        return {
+          productId: item.productId,
+          model: item.name,
+          image: item.image,
+          price: item.price?.toString() || "0",
+          brand: item.name?.split(" ")[0] || "",
+          category: item.categoryName || "",
+          specs, // toàn bộ specs
+        };
+      };
 
-        price: item.price?.toString() || "0",
+      const productRes = await publicProductApi.getProductById(Number(id));
+      const selected = productRes.data.data;
 
-        brand: item.name?.split(" ")[0] || "",
-        year: item.year?.toString() || "",
-        weight: item.weight || "",
-        refreshRate: item.refreshRate || "",
-        storageType: item.categoryName || "",
-      }));
+      const specRes = await specificationApi.getAll();
+      const allSpecs = specRes.data.data;
 
-      setComparisonProducts(mapped);
+      const selectedMapped = mapProduct(selected, allSpecs);
+
+      const res = await publicProductApi.getAllProducts();
+      const list = res.data.data;
+
+      const mapped = list.map((item) => mapProduct(item, allSpecs));
+
+      setComparisonProducts([
+        selectedMapped,
+        ...mapped.filter((p) => p.model !== selectedMapped.model),
+      ]);
     };
 
     fetchProducts();
-  }, []);
+  }, [id]);
 
   return (
     <div className="space-y-8">

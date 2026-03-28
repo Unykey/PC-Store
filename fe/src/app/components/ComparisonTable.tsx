@@ -1,29 +1,22 @@
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo, Fragment, useEffect } from "react";
 import {
   X,
   Plus,
   Search,
   ChevronDown,
-  ShoppingCart,
-  ExternalLink,
 } from "lucide-react";
+import { formatVnd } from "../utils/formatCurrency";
+import { getImageUrl } from "../utils/image";
+import { Link } from "react-router-dom";
 
 interface Product {
+  productId: number;
   model: string;
   image: string;
-  processor: string;
-  ram: string;
-  rom: string;
-  display: string;
-  graphics: string;
-  os: string;
-  battery: string;
   price: string;
   brand?: string;
-  year?: string;
-  weight?: string;
-  refreshRate?: string;
-  storageType?: string;
+  category?: string;
+  specs: Record<string, string>;
 }
 
 interface ComparisonTableProps {
@@ -47,16 +40,20 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
   const [filterPrice, setFilterPrice] = useState("all");
   const [showDifferencesOnly, setShowDifferencesOnly] = useState(false);
 
+  useEffect(() => {
+    if (products.length > 0) {
+      console.log(products);
+      setSelectedProducts([products[0]]);
+    }
+  }, [products]);
+
   // Thêm brand và các thông tin khác cho products
   const enhancedProducts = useMemo(
     () =>
       products.map((p) => ({
         ...p,
         brand: p.brand || p.model.split(" ")[0] || "",
-        year: p.year || "",
-        weight: p.weight || "",
-        refreshRate: p.refreshRate || "",
-        storageType: p.storageType || "",
+        category: p.category || "",
       })),
     [products],
   );
@@ -69,6 +66,10 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
 
   // Filter products
   const filteredProducts = useMemo(() => {
+    if (selectedProducts.length === 0) return [];
+
+    const currentCategory = selectedProducts[0].category;
+
     return enhancedProducts.filter((p) => {
       const matchSearch = p.model
         .toLowerCase()
@@ -76,7 +77,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
 
       const matchBrand = filterBrand === "all" || p.brand === filterBrand;
 
-      const priceNum = Number(p.price); // giá từ API (VND)
+      const priceNum = Number(p.price);
 
       const matchPrice =
         filterPrice === "all" ||
@@ -89,9 +90,13 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
           priceNum < 35000000) ||
         (filterPrice === "over35" && priceNum >= 35000000);
 
+      const sameCategory = p.category === currentCategory;
+
       const notSelected = !selectedProducts.find((sp) => sp.model === p.model);
 
-      return matchSearch && matchBrand && matchPrice && notSelected;
+      return (
+        matchSearch && matchBrand && matchPrice && sameCategory && notSelected
+      );
     });
   }, [
     enhancedProducts,
@@ -102,72 +107,58 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
   ]);
 
   // Tiêu chí so sánh
-  const comparisonCriteria: ComparisonCriteria[] = [
-    {
-      category: "Tổng Quan",
-      items: [
-        { label: "Giá", key: "price" },
-        { label: "Hãng", key: "brand" },
-        { label: "Năm", key: "year" },
-      ],
-    },
-    {
-      category: "Hiệu Năng",
-      items: [
-        { label: "CPU", key: "processor" },
-        { label: "GPU", key: "graphics" },
-        { label: "RAM", key: "ram" },
-      ],
-    },
-    {
-      category: "Lưu Trữ",
-      items: [
-        { label: "Loại ổ", key: "storageType" },
-        { label: "Dung lượng", key: "rom" },
-      ],
-    },
-    {
-      category: "Màn Hình",
-      items: [
-        { label: "Kích thước", key: "display" },
-        { label: "Tần số quét", key: "refreshRate" },
-      ],
-    },
-    {
-      category: "Di Động",
-      items: [
-        { label: "Pin", key: "battery" },
-        { label: "Trọng lượng", key: "weight" },
-      ],
-    },
-  ];
+  const comparisonCriteria: ComparisonCriteria[] = useMemo(() => {
+    const allKeys = new Set<string>();
+
+    selectedProducts.forEach((p) => {
+      Object.keys(p.specs || {}).forEach((k) => allKeys.add(k));
+    });
+
+    return [
+      {
+        category: "Tổng Quan",
+        items: [
+          { label: "Hãng", key: "brand" },
+          { label: "Loại", key: "category" },
+        ],
+      },
+      {
+        category: "Thông số",
+        items: Array.from(allKeys).map((key) => ({
+          label: key,
+          key: "derived",
+          getValue: (p: Product) => p.specs[key] || "-",
+        })),
+      },
+    ];
+  }, [selectedProducts]);
 
   // Lọc tiêu chí nếu bật "chỉ hiển thị khác biệt"
   const visibleCriteria = useMemo(() => {
-    if (!showDifferencesOnly || selectedProducts.length < 2) {
-      return comparisonCriteria;
-    }
-
     return comparisonCriteria
       .map((category) => ({
         ...category,
         items: category.items.filter((item) => {
           const values = selectedProducts.map((p) => {
-            if (item.getValue) return item.getValue(p);
-            return p[item.key as keyof Product] || "";
+            const value =
+              item.getValue?.(p) ||
+              (p[item.key as keyof Product] as string) ||
+              "";
+
+            return value.trim();
           });
-          return new Set(values).size > 1; // Có sự khác biệt
+
+          // giữ item nếu có ít nhất 1 giá trị khác rỗng
+          return values.some((v) => v !== "");
         }),
       }))
-      .filter((category) => category.items.length > 0);
-  }, [showDifferencesOnly, selectedProducts]);
+      .filter((category) => category.items.length > 0); // ẩn cả category nếu rỗng
+  }, [selectedProducts, comparisonCriteria]);
 
   // Tìm giá thấp nhất
   const lowestPriceIndex = useMemo(() => {
     if (selectedProducts.length === 0) return -1;
-    const prices = selectedProducts.map((p) =>
-      parseInt(p.price.replace(/[^0-9]/g, "")),
-    );
+    const prices = selectedProducts.map((p) => Number(p.price));
     const minPrice = Math.min(...prices);
     return prices.indexOf(minPrice);
   }, [selectedProducts]);
@@ -202,7 +193,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
             </button>
             <div className="w-full h-32 bg-gray-100 rounded-md overflow-hidden mb-3">
               <img
-                src={product.image}
+                src={getImageUrl(product.image)}
                 alt={product.model}
                 className="w-full h-full object-cover"
               />
@@ -213,7 +204,9 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
             >
               {product.model}
             </h3>
-            <p className="text-lg font-bold text-[#f37021]">{product.price}</p>
+            <p className="text-lg font-bold text-[#f37021]">
+              {formatVnd(Number(product.price))}
+            </p>
           </div>
         ))}
 
@@ -281,7 +274,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                       <div className="text-center">
                         <div className="w-20 h-20 mx-auto mb-2 bg-gray-100 rounded-lg overflow-hidden">
                           <img
-                            src={product.image}
+                            src={getImageUrl(product.image)}
                             alt={product.model}
                             className="w-full h-full object-cover"
                           />
@@ -292,7 +285,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                         <p
                           className={`text-lg font-bold ${index === lowestPriceIndex ? "text-[#0db14b]" : "text-[#f37021]"}`}
                         >
-                          {product.price}
+                          {formatVnd(Number(product.price))}
                         </p>
                         {index === lowestPriceIndex && (
                           <span className="inline-block mt-1 px-2 py-0.5 bg-[#0db14b] text-white text-xs rounded-full">
@@ -329,9 +322,10 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                           {item.label}
                         </td>
                         {selectedProducts.map((product, prodIndex) => {
-                          const value = item.getValue
-                            ? item.getValue(product)
-                            : product[item.key as keyof Product] || "";
+                          const value =
+                            item.getValue?.(product) ||
+                            (product[item.key as keyof Product] as string) ||
+                            "-";
 
                           return (
                             <td
@@ -350,20 +344,24 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                 {/* CTA Row */}
                 <tr>
                   <td className="sticky left-0 z-10 bg-gray-50 border-r-2 border-t-2 border-gray-200 p-4"></td>
-                  {selectedProducts.map((_, index) => (
+                  {selectedProducts.map((product, index) => (
                     <td
                       key={index}
                       className="border-t-2 border-gray-200 p-4 bg-gray-50"
                     >
                       <div className="flex flex-col gap-2">
-                        <button className="bg-[#f37021] text-white px-4 py-2 rounded-md hover:bg-[#d45f1a] transition-colors text-sm font-medium flex items-center justify-center gap-2">
-                          <ShoppingCart size={16} />
+                        <Link
+                          to={`/checkout?productId=${product.productId}&quantity=1`}
+                          className="bg-[#f37021] text-white px-4 py-2 rounded-md hover:bg-[#d45f1a] transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                        >
                           Mua ngay
-                        </button>
-                        <button className="bg-white text-[#0066b3] border border-[#0066b3] px-4 py-2 rounded-md hover:bg-[#0066b3] hover:text-white transition-colors text-sm font-medium flex items-center justify-center gap-2">
-                          <ExternalLink size={16} />
+                        </Link>
+                        <Link
+                          to={`/product/${product.productId}`}
+                          className="bg-white text-[#0066b3] border border-[#0066b3] px-4 py-2 rounded-md hover:bg-[#0066b3] hover:text-white transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                        >
                           Xem chi tiết
-                        </button>
+                        </Link>
                       </div>
                     </td>
                   ))}
@@ -476,7 +474,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                     >
                       <div className="w-full h-32 bg-gray-100 rounded-md overflow-hidden mb-3">
                         <img
-                          src={product.image}
+                          src={getImageUrl(product.image)}
                           alt={product.model}
                           className="w-full h-full object-cover"
                         />
@@ -488,7 +486,7 @@ export function ComparisonTable({ products }: ComparisonTableProps) {
                         {product.model}
                       </h3>
                       <p className="text-lg font-bold text-[#f37021] mb-2">
-                        {product.price}
+                        {formatVnd(Number(product.price))}
                       </p>
                       <div className="flex items-center justify-center gap-2 text-[#0066b3] text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                         <Plus size={16} />

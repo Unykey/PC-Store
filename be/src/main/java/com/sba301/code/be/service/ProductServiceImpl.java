@@ -2,14 +2,18 @@ package com.sba301.code.be.service;
 
 
 import com.sba301.code.be.dto.request.ProductRequest;
+import com.sba301.code.be.dto.request.ProductSpecificationRequest;
 import com.sba301.code.be.dto.response.ProductPageResponse;
 import com.sba301.code.be.dto.response.ProductResponse;
 import com.sba301.code.be.exception.ResourceNotFoundException;
 import com.sba301.code.be.model.entity.Category;
 import com.sba301.code.be.model.entity.Product;
+import com.sba301.code.be.model.entity.ProductSpecification;
 import com.sba301.code.be.repository.CategoryRepository;
 import com.sba301.code.be.repository.ProductRepository;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -37,19 +41,50 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public ProductResponse createProduct(ProductRequest productRequest) {
+    public ProductResponse createProduct(ProductRequest req) {
         Product product = new Product();
-        applyRequestToEntity(productRequest, product);
+        toEntity(req, product);
+
+        // xử lý specifications
+        if (req.getSpecifications() != null) {
+            List<ProductSpecification> specs = req.getSpecifications().stream()
+                    .map(s -> {
+                        ProductSpecification ps = new ProductSpecification();
+                        ps.setSpecKey(s.getSpecKey());
+                        ps.setSpecValue(s.getSpecValue());
+                        ps.setProduct(product);
+                        return ps;
+                    }).toList();
+            product.setSpecifications(specs);
+        }
+
         Product saved = productRepository.save(product);
         return toResponse(saved);
     }
 
     @Override
-    public ProductResponse updateProduct(Long productId, ProductRequest productRequest) {
+    public ProductResponse updateProduct(Long productId, ProductRequest req) {
         Product existing = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id " + productId));
-        applyRequestToEntity(productRequest, existing);
-        existing.setProductId(productId);
+
+        toEntity(req, existing);
+
+        // clear + set lại specifications
+        if (req.getSpecifications() != null) {
+            existing.getSpecifications().clear();
+
+            List<ProductSpecification> specs = req.getSpecifications().stream()
+                    .map(s -> {
+                        ProductSpecification ps = new ProductSpecification();
+                        ps.setSpecKey(s.getSpecKey());
+                        ps.setSpecValue(s.getSpecValue());
+                        ps.setProduct(existing);
+                        return ps;
+                    }).toList();
+
+            existing.getSpecifications().addAll(specs);
+        }
+
         Product saved = productRepository.save(existing);
         return toResponse(saved);
     }
@@ -119,6 +154,13 @@ public class ProductServiceImpl implements ProductService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<ProductResponse> getProductsPaging(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productRepository.findAll(pageable).stream()
+                .map(this::toResponse).toList();
+    }
+
     private ProductResponse toResponse(Product product) {
         ProductResponse res = new ProductResponse();
         res.setProductId(product.getProductId());
@@ -127,19 +169,36 @@ public class ProductServiceImpl implements ProductService {
         res.setPrice(product.getPrice());
         res.setStockQuantity(product.getStockQuantity());
         res.setSerialNumber(product.getSerialNumber());
+        res.setImage(product.getImage());
+
         if (product.getCategory() != null) {
             res.setCategoryId(product.getCategory().getCategoryId());
             res.setCategoryName(product.getCategory().getName());
         }
+
+        if (product.getSpecifications() != null) {
+            res.setSpecifications(
+                    product.getSpecifications().stream()
+                            .map(s -> {
+                                var dto = new com.sba301.code.be.dto.response.ProductSpecificationResponse();
+                                dto.setProductSpecificationId(s.getProductSpecificationId());
+                                dto.setSpecKey(s.getSpecKey());
+                                dto.setSpecValue(s.getSpecValue());
+                                return dto;
+                            }).toList()
+            );
+        }
+
         return res;
     }
 
-    private void applyRequestToEntity(ProductRequest req, Product entity) {
+    private void toEntity(ProductRequest req, Product entity) {
         entity.setName(req.getName());
         entity.setDescription(req.getDescription());
         entity.setPrice(req.getPrice());
         entity.setStockQuantity(req.getStockQuantity());
         entity.setSerialNumber(req.getSerialNumber());
+        entity.setImage(req.getImage());
         if (req.getCategoryId() != null) {
             Category category = categoryRepository.findById(req.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException("Category not found with id " + req.getCategoryId()));

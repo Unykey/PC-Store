@@ -1,9 +1,15 @@
-import axiosClient from './axiosClient';
+import axiosClient from "./axiosClient";
 
 export interface ApiResponse<T> {
   status: number;
   message: string;
   data: T;
+}
+
+export interface ProductSpecificationResponse {
+  productSpecificationId: number;
+  specKey: string;
+  specValue: string;
 }
 
 export interface ProductResponse {
@@ -13,8 +19,11 @@ export interface ProductResponse {
   price: number;
   stockQuantity: number;
   serialNumber?: string;
+  image?: string;
   categoryId?: number;
   categoryName?: string;
+
+  specifications?: ProductSpecificationResponse[];
 }
 
 export interface ProductRequest {
@@ -23,6 +32,7 @@ export interface ProductRequest {
   price: number;
   stockQuantity: number;
   serialNumber?: string;
+  image?: string;
   categoryId?: number;
 }
 
@@ -44,28 +54,25 @@ export const update = (id: number, payload: ProductRequest) =>
 export const deleteProduct = (id: number) =>
   axiosClient.delete<ApiResponse<null>>(`/api/admin/products/${id}`);
 
-// Dashboard-specific endpoint: low-stock list
-export const getLowStockList = () =>
-  axiosClient.get<ApiResponse<ProductResponse[]>>('/api/admin/dashboard/low-stock-list');
-
-// Public product APIs (default export)
+// PUBLIC API
 export const publicProductApi = {
-  // these public endpoints in backend may return bare objects/arrays (not wrapped in ApiResponse)
-  getAllProducts: () => axiosClient.get('api/products'),
-  getProductById: (id: number) => axiosClient.get(`api/products/${id}`),
-  createProduct: (data: Partial<ProductResponse>) => axiosClient.post('api/products', data),
-  updateProduct: (id: number, data: Partial<ProductResponse>) => axiosClient.put(`api/products/${id}`, data),
-  deleteProduct: (id: number) => axiosClient.delete(`api/products/${id}`),
-};
+  getAllProducts: () =>
+    axiosClient.get<ApiResponse<ProductResponse[]>>("api/products"),
 
-// Add named exports for admin helpers grouped under productApi
-export const productApi = {
-  getAll,
-  getById,
-  create,
-  update,
-  delete: deleteProduct,
-  getLowStockList,
+  getProductsPaging: () =>
+    axiosClient.get<ApiResponse<ProductResponse[]>>("api/products/paging"),
+
+  getProductById: (id: number) =>
+    axiosClient.get<ApiResponse<ProductResponse>>(`api/products/${id}`),
+
+  createProduct: (data: Partial<ProductResponse>) =>
+    axiosClient.post<ApiResponse<ProductResponse>>("api/products", data),
+
+  updateProduct: (id: number, data: Partial<ProductResponse>) =>
+    axiosClient.put<ApiResponse<ProductResponse>>(`api/products/${id}`, data),
+
+  deleteProduct: (id: number) =>
+    axiosClient.delete<ApiResponse<null>>(`api/products/${id}`),
 };
 
 export default publicProductApi;
