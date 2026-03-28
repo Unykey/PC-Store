@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # 1. Local AI (Ollama)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: pc_store_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+  # 2. Vector Database (Qdrant)
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: pc_store_qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+
+  # 3. Relational Database (PostgreSQL 16)
+  postgres:
+    image: postgres:16-alpine # Bản alpine cực nhẹ và nhanh
+    container_name: pc_store_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: PcStore@2026
+      # Điểm ăn tiền: Khai báo tên DB ở đây, Docker sẽ tự tạo luôn!
+      POSTGRES_DB: pc_store
+    ports:
+      - "5433:5432" # Ép ra cổng 5433 trên máy thật
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+  qdrant_data:
+  postgres_data:
