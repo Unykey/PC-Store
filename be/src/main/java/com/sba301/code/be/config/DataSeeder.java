@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Component
-@RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
     private final AccountRepository accountRepository;
@@ -58,14 +57,23 @@ public class DataSeeder implements CommandLineRunner {
                       CategoryRepository categoryRepository,
                       ProductRepository productRepository,
                       ProductSpecificationRepository productSpecificationRepository,
-                      OrderRepository orderRepository, PasswordEncoder passwordEncoder) {
+                      OrderRepository orderRepository, CpuRepository cpuRepository, GpuRepository gpuRepository, MainboardRepository mainboardRepository, RamRepository ramRepository, PcCaseRepository pcCaseRepository, PsuRepository psuRepository, StorageRepository storageRepository, CoolerRepository coolerRepository, PasswordEncoder passwordEncoder, ClientHttpMessageConvertersCustomizer clientConvertersCustomizer) {
         this.accountRepository = accountRepository;
         this.roleRepository = roleRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.productSpecificationRepository = productSpecificationRepository;
         this.orderRepository = orderRepository;
+        this.cpuRepository = cpuRepository;
+        this.gpuRepository = gpuRepository;
+        this.mainboardRepository = mainboardRepository;
+        this.ramRepository = ramRepository;
+        this.pcCaseRepository = pcCaseRepository;
+        this.psuRepository = psuRepository;
+        this.storageRepository = storageRepository;
+        this.coolerRepository = coolerRepository;
         this.passwordEncoder = passwordEncoder;
+        this.clientConvertersCustomizer = clientConvertersCustomizer;
     }
 
     @Override
