@@ -6,7 +6,7 @@ import {
   Shield, 
   Tag, 
   ChevronRight,
-  X 
+  X
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -74,8 +74,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   {item.label}
                 </span>
                 {item.subItems.length > 0 && (
-                  <ChevronRight 
-                    size={16} 
+                  <ChevronRight
+                    size={16}
                     className="text-gray-400 group-hover:text-gray-600"
                   />
                 )}

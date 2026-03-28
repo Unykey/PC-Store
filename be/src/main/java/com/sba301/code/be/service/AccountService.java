@@ -18,4 +18,5 @@ public interface AccountService {
 
     JWTAuthResponse authenticateUser(LoginDto loginDto);
     String registerUser(RegisterDto registerDto);
+    List<Account> searchAccounts(String query);
 }

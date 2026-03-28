@@ -1,22 +1,18 @@
-import {Link, useNavigate} from 'react-router-dom';
-import {Search, Bell, User, ShoppingCart} from 'lucide-react';
-import {MegaMenu} from './MegaMenu';
+import { Link, useNavigate } from 'react-router-dom';
+import { Search, Bell, User, ShoppingCart } from 'lucide-react';
+import { MegaMenu } from './MegaMenu';
 
 interface HeaderProps {
-    onMenuToggle: () => void;
+    onMenuToggle?: () => void;
 }
 
-export function Header({onMenuToggle}: HeaderProps) {
+export function Header(_: HeaderProps) {
     const navigate = useNavigate();
 
     const quickLinks = [
-        {name: 'iPhone 17', path: '#'}, // Để tạm # do chưa có trang
-        {name: 'MacBook Air M4', path: '#'},
-        {name: 'Laptop', path: '#'},
-        {name: 'Laptop RTX 50 series', path: '#'},
-        {name: 'Màn Hình', path: '#'},
-        {name: 'VGA', path: '#'},
-        {name: 'Build PC', path: '/build-pc'} // <-- Quan trọng nhất dòng này
+        { name: 'Build PC', path: '/build-pc' },
+        { name: 'Đơn hàng', path: '/orders' },
+        { name: 'Lịch trả góp', path: '/my-installments' }
     ];
 
     return (
@@ -37,7 +33,7 @@ export function Header({onMenuToggle}: HeaderProps) {
 
                             {/* Danh mục sản phẩm - Moved here */}
                             <div className="flex-shrink-0">
-                                <MegaMenu/>
+                                <MegaMenu />
                             </div>
 
                             {/* Search Bar */}
@@ -50,7 +46,7 @@ export function Header({onMenuToggle}: HeaderProps) {
                                     />
                                     <button
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-                                        <Search size={20}/>
+                                        <Search size={20} />
                                     </button>
                                 </div>
                             </div>
@@ -63,7 +59,7 @@ export function Header({onMenuToggle}: HeaderProps) {
                                     className="flex items-center gap-2 text-gray-700 hover:text-[#f37021] transition-colors">
                                     <div
                                         className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center">
-                                        <User size={18}/>
+                                        <User size={18} />
                                     </div>
                                     <div className="text-left hidden lg:block">
                                         <div className="text-xs text-gray-500">Đăng nhập</div>
@@ -73,15 +69,16 @@ export function Header({onMenuToggle}: HeaderProps) {
 
                                 {/* Notifications */}
                                 <button className="relative p-2 text-gray-700 hover:text-[#f37021] transition-colors">
-                                    <Bell size={24}/>
+                                    <Bell size={24} />
                                 </button>
 
                                 {/* Shopping Cart */}
                                 <button
+                                    onClick={() => navigate('/checkout')}
                                     className="relative flex items-center gap-2 text-gray-700 hover:text-[#f37021] transition-colors">
-                                    <ShoppingCart size={24}/>
+                                    <ShoppingCart size={24} />
                                     <div className="text-left hidden lg:block">
-                                        <div className="text-xs text-gray-500">Giỏ hàng của bạn</div>
+                                        <div className="text-xs text-gray-500">Giỏ hàng / Thanh toán</div>
                                         <div className="text-sm font-medium">(1) sản phẩm</div>
                                     </div>
                                 </button>
