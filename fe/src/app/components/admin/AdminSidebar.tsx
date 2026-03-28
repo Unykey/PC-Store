@@ -4,7 +4,6 @@ import {
   Warehouse,
   ShoppingCart,
   Users,
-  Star,
   BarChart3,
 } from 'lucide-react';
 
@@ -26,7 +25,6 @@ const defaultItems: MenuItem[] = [
   { id: 'inventory', label: 'Inventory', icon: Warehouse },
   { id: 'orders', label: 'Orders', icon: ShoppingCart },
   { id: 'customers', label: 'Customers', icon: Users },
-  { id: 'reviews', label: 'Reviews', icon: Star },
   { id: 'reports', label: 'Reports', icon: BarChart3 },
 ];
 
