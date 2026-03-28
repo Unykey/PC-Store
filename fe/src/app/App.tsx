@@ -1,10 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
-import { Footer } from './components/Footer'; // Import Footer mới
-import HomePage from './pages/HomePage'; // Import HomePage mới
+import { Footer } from './components/Footer';
+import HomePage from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
-import BuildPC from './pages/BuildPC'; // Import BuildPC đã làm trước đó
+import BuildPC from './pages/BuildPC';
 import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
@@ -15,15 +15,13 @@ import OrderSuccessPage from './pages/OrderSuccessPage';
 import OrderFailPage from './pages/OrderFailPage';
 import { ComparisonPage } from './pages/ComparisonPage';
 import { AdminDashboard } from './components/AdminDashboard';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
     return (
         <div className="min-h-screen flex flex-col bg-gray-50">
-            {/* 1. Header luôn cố định ở trên */}
             <Header />
 
-            {/* 2. Phần nội dung chính sẽ thay đổi tùy theo URL */}
-            {/* Thêm pt-20 hoặc pt-28 tùy độ cao header để tránh nội dung bị che */}
             <main className="flex-1 pt-[80px]">
                 <Routes>
                     <Route path="/" element={<HomePage />} />
@@ -39,11 +37,11 @@ export default function App() {
                     <Route path="/payment/result" element={<PaymentResultPage />} />
                     <Route path="/order-success" element={<OrderSuccessPage />} />
                     <Route path="/order-fail" element={<OrderFailPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
                     <Route path='/compare/:id' element={<ComparisonPage />} />
                 </Routes>
             </main>
 
-            {/* 3. Footer luôn cố định ở dưới */}
             <Footer />
         </div>
     );
